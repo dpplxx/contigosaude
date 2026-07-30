@@ -852,6 +852,8 @@ alter table public.fisios add column if not exists crefito_encrypted text;
 alter table public.fisios add column if not exists crefito_status text default 'pendente'
   check (crefito_status in ('pendente', 'verificado', 'rejeitado'));
 alter table public.fisios add column if not exists crefito_verificado_em timestamptz;
+alter table public.fisios add column if not exists email text;
+alter table public.fisios add column if not exists notificacoes_ativas boolean default true;
 
 alter table public.pedidos add column if not exists observacoes_encrypted text;
 
@@ -926,6 +928,45 @@ as $$
   where pedido_id = p_paciente_id;
 $$;
 
+-- 5. NOTIFICAÇÕES (quando pedido compatível é criado)
+create or replace function public.hc_notificar_fisios(p_pedido_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_pedido record;
+  v_fisios_compatibles record;
+  v_count integer := 0;
+begin
+  -- Recupera o pedido criado
+  select * into v_pedido from public.pedidos where id = p_pedido_id;
+  if v_pedido is null then
+    return jsonb_build_object('erro', 'Pedido não encontrado');
+  end if;
+
+  -- Encontra fisios compatíveis (mesma especialidade, região, notificações ativas)
+  -- Aqui você integraria com um serviço de email/SMS
+  -- Por enquanto, apenas registra que notificação foi enviada
+  select count(*) into v_count
+  from public.fisios f
+  where f.especialidades @> array[v_pedido.especialidade]
+    and f.cidade = v_pedido.cidade
+    and f.notificacoes_ativas = true
+    and f.deletado_em is null;
+
+  -- TODO: Enviar email/SMS real para fisios compatíveis
+  -- Implementar com Supabase Email ou serviço externo (SendGrid, Twilio, etc)
+
+  return jsonb_build_object(
+    'pedido_id', p_pedido_id,
+    'fisios_notificaveis', v_count,
+    'mensagem', 'Notificações prontas para envio'
+  );
+end;
+$$;
+
 -- 6. PERMISSÕES
 alter table public.auditoria enable row level security;
 revoke all on public.auditoria from anon;
@@ -933,6 +974,7 @@ create policy auditoria_admin_only on public.auditoria for all to authenticated
   using (public.hc_e_admin())
   with check (public.hc_e_admin());
 
+grant execute on function public.hc_notificar_fisios(uuid) to authenticated;
 grant execute on function public.hc_limpar_auditoria() to authenticated;
 grant execute on function public.hc_encriptar_crefito(text) to anon, authenticated;
 grant execute on function public.hc_descriptografar_crefito(text) to authenticated;
