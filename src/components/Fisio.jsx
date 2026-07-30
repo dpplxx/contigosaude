@@ -22,6 +22,7 @@ import {
   Vazio,
 } from "./ui";
 import { CepInput, ChatThread, PhoneGate } from "./Compartilhados";
+import { EthicalCheckbox, PrototypeWarning } from "./Ethics";
 import { formatarDistancia } from "../lib/geo";
 import { cadastrarFisio, marcarStatusAgendamento, painelFisio } from "../lib/api";
 import {
@@ -34,6 +35,18 @@ import {
   tempoRelativo,
   waLink,
 } from "../lib/utils";
+import {
+  CODIGO_ETICA_CREFITO,
+  POLITICA_PRIVACIDADE,
+  TERMOS_DE_USO,
+  TERMO_RESPONSABILIDADE_PROFISSIONAL,
+} from "../lib/termos";
+
+const UFS = [
+  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
+  "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
+  "RS", "RO", "RR", "SC", "SP", "SE", "TO",
+];
 
 const PHYSIO_INITIAL = {
   nome: "",
@@ -50,6 +63,11 @@ const PHYSIO_INITIAL = {
   formacao: "",
   resumo: "",
   valorSessao: "",
+  crefito: "",
+  crefinoUf: "",
+  declaracaoCrefito: false,
+  declaracaoEtica: false,
+  declaracaoResponsabilidade: false,
 };
 
 const RAIOS = [3, 5, 10, 15, 20, 30, 50];
@@ -90,6 +108,14 @@ export function PhysioForm({ onToast }) {
       setErro("Escolha ao menos uma especialidade que você atende.");
       return;
     }
+    if (!form.crefito || !form.crefinoUf) {
+      setErro("Preencha seu CREFITO e a UF do registro.");
+      return;
+    }
+    if (!form.declaracaoCrefito || !form.declaracaoEtica || !form.declaracaoResponsabilidade) {
+      setErro("Você precisa aceitar todas as declarações éticas para se cadastrar.");
+      return;
+    }
     setSaving(true);
     setErro("");
     try {
@@ -104,19 +130,43 @@ export function PhysioForm({ onToast }) {
   };
 
   return (
-    <Card>
-      <h2 className="text-lg font-medium mb-1">Cadastre-se como fisioterapeuta</h2>
-      <p className="text-sm mb-5" style={{ color: "var(--muted1)" }}>
-        Receba pedidos de atendimento domiciliar na sua região.
-      </p>
-      <form onSubmit={submit}>
-        <Field label="Seu nome">
-          <TextInput value={form.nome} onChange={set("nome")} placeholder="Ex: João Pereira" required />
-        </Field>
-        <Field label="WhatsApp para contato">
-          <PhoneInput value={form.whatsapp} onChange={set("whatsapp")} required />
-        </Field>
-        <Field label="Especialidades que você atende">
+    <div className="space-y-4">
+      <PrototypeWarning />
+      <Card>
+        <h2 className="text-lg font-medium mb-1">Cadastre-se como fisioterapeuta</h2>
+        <p className="text-sm mb-5" style={{ color: "var(--muted1)" }}>
+          Receba pedidos de atendimento domiciliar na sua região.
+        </p>
+        <form onSubmit={submit}>
+          <Field label="Seu nome">
+            <TextInput value={form.nome} onChange={set("nome")} placeholder="Ex: João Pereira" required />
+          </Field>
+          <Field label="WhatsApp para contato">
+            <PhoneInput value={form.whatsapp} onChange={set("whatsapp")} required />
+          </Field>
+          <Field label="Número do CREFITO (obrigatório)">
+            <TextInput
+              value={form.crefito}
+              onChange={set("crefito")}
+              placeholder="Ex: 123456"
+              required
+            />
+          </Field>
+          <Field label="UF do seu registro">
+            <SelectInput
+              value={form.crefinoUf}
+              onChange={(e) => setForm((f) => ({ ...f, crefinoUf: e.target.value }))}
+              required
+            >
+              <option value="">Selecione a UF</option>
+              {UFS.map((uf) => (
+                <option key={uf} value={uf}>
+                  {uf}
+                </option>
+              ))}
+            </SelectInput>
+          </Field>
+          <Field label="Especialidades que você atende">
           <div className="flex flex-wrap gap-2">
             {ESPECIALIDADES_FISIO.map((esp) => {
               const active = form.especialidades.includes(esp);
@@ -205,16 +255,51 @@ export function PhysioForm({ onToast }) {
             inputMode="decimal"
           />
         </Field>
+
+        <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+          <p className="text-sm font-medium mb-3" style={{ color: "#E3A873" }}>
+            ⚖️ Declarações Éticas e Legais (obrigatórias)
+          </p>
+
+          <EthicalCheckbox
+            id="crefito_check"
+            checked={form.declaracaoCrefito}
+            onChange={(val) => setForm((f) => ({ ...f, declaracaoCrefito: val }))}
+            label="Declaro que possuo registro ativo no CREFITO e estou quite com as obrigações do Conselho."
+            modalTitle="Declaração de Regularidade"
+            modalContent={TERMO_RESPONSABILIDADE_PROFISSIONAL}
+          />
+
+          <EthicalCheckbox
+            id="etica_check"
+            checked={form.declaracaoEtica}
+            onChange={(val) => setForm((f) => ({ ...f, declaracaoEtica: val }))}
+            label="Declaro ter lido e estar ciente do Código de Ética da Fisioterapia (Resolução COFFITO nº 424/2013)."
+            modalTitle="Código de Ética"
+            modalContent={CODIGO_ETICA_CREFITO}
+          />
+
+          <EthicalCheckbox
+            id="responsabilidade_check"
+            checked={form.declaracaoResponsabilidade}
+            onChange={(val) => setForm((f) => ({ ...f, declaracaoResponsabilidade: val }))}
+            label="Declaro que assumo total responsabilidade pelos atendimentos, isentando a plataforma de qualquer responsabilidade civil ou criminal."
+            modalTitle="Termo de Responsabilidade"
+            modalContent={TERMO_RESPONSABILIDADE_PROFISSIONAL}
+          />
+        </div>
+
         <ErroInline>{erro}</ErroInline>
         <PrimaryButton type="submit" loading={saving}>
           Cadastrar <ArrowRight size={16} />
         </PrimaryButton>
+        <p className="text-xs mt-4" style={{ color: "var(--muted3)" }}>
+          Se você já se cadastrou com este mesmo WhatsApp, enviar de novo atualiza seus dados em vez
+          de criar um cadastro duplicado.
+        </p>
       </form>
-      <p className="text-xs mt-4" style={{ color: "var(--muted3)" }}>
-        Se você já se cadastrou com este mesmo WhatsApp, enviar de novo atualiza seus dados em vez
-        de criar um cadastro duplicado.
-      </p>
     </Card>
+    </div>
   );
 }
 
