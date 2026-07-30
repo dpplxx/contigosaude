@@ -4,6 +4,7 @@ import { Card, Field, TextInput, SelectInput, PrimaryButton } from "./ui";
 import { CepInput, PhoneGate } from "./Compartilhados";
 import { ESPECIALIDADES_PACIENTE, mensagemDeErro, waLink } from "../lib/utils";
 import { supabase } from "../lib/supabase";
+import { criarPedido } from "../lib/api";
 
 const BUSCA_INITIAL = {
   nome: "",
@@ -48,6 +49,10 @@ export function BuscaFisios() {
     setFisios(null);
 
     try {
+      // Cria o pedido no Supabase para registrar a demanda
+      await criarPedido(form);
+
+      // Busca os fisios compatíveis
       const { data, error } = await supabase.rpc("hc_listar_fisios", {
         p_especialidade: form.especialidade,
         p_cidade: form.cidade,
