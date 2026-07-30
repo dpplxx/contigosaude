@@ -15,10 +15,16 @@ export default defineConfig({
   base: process.env.VITE_BASE_PATH || "/",
   plugins: [react(), tailwindcss()],
   build: {
+    outDir: "dist",
     rollupOptions: {
       input: {
         landing: resolve(import.meta.dirname, "index.html"),
         app: resolve(import.meta.dirname, "app.html"),
+      },
+      output: {
+        entryFileNames: "assets/[name]-[hash].js",
+        chunkFileNames: "assets/[name]-[hash].js",
+        assetFileNames: "assets/[name]-[hash][extname]",
       },
     },
   },
