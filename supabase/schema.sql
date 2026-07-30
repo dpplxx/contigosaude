@@ -73,6 +73,7 @@ alter table public.fisios add column if not exists uf text;
 alter table public.fisios add column if not exists lat double precision;
 alter table public.fisios add column if not exists lng double precision;
 alter table public.fisios add column if not exists raio_km integer not null default 10;
+alter table public.fisios add column if not exists foto_url text;
 
 alter table public.pedidos add column if not exists cep text;
 alter table public.pedidos add column if not exists uf text;
@@ -433,6 +434,57 @@ begin
 
   return v_id;
 end $$;
+
+-- ============================================================================
+-- BUSCA DE FISIOTERAPEUTAS POR LOCALIZAÇÃO (modelo Uber)
+-- ============================================================================
+
+create or replace function public.hc_listar_fisios(
+  p_especialidade text,
+  p_cidade text,
+  p_bairro text,
+  p_lat double precision default null,
+  p_lng double precision default null
+)
+returns jsonb
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'id', f.id,
+        'nome', f.nome,
+        'foto_url', f.foto_url,
+        'especialidades', f.especialidades,
+        'formacao', f.formacao,
+        'bairro', (f.bairros[1]),
+        'whatsapp', f.whatsapp,
+        'distancia_km',
+          case
+            when p_lat is not null and f.lat is not null
+            then hc_distancia_km(f.lat, f.lng, p_lat, p_lng)
+            else null
+          end
+      )
+      order by
+        case
+          when p_lat is not null and f.lat is not null
+          then hc_distancia_km(f.lat, f.lng, p_lat, p_lng)
+          else 999
+        end,
+        f.nome
+    ),
+    '[]'::jsonb
+  )
+  from fisios f
+  where hc_compativel(
+    f.especialidades, f.cidade, f.bairros, f.lat, f.lng, f.raio_km,
+    p_especialidade, p_cidade, p_bairro, p_lat, p_lng
+  )
+  and f.deletado_em is null;
+$$;
 
 -- ============================================================================
 -- LEITURA DO PACIENTE — só os próprios pedidos, achados pelo WhatsApp
