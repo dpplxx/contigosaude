@@ -1,6 +1,11 @@
 /**
  * Normalização de dados geolocaliza dos
- * Reduz problemas causados por erros de digitação, acentuação, etc
+ * Reduz problemas causados por erros de digitação, acentuação, etc.
+ *
+ * Exemplo de uso:
+ * - "Tatuapé" combina com "Tatuape"
+ * - "São Paulo" combina com "Sao Paulo"
+ * - Tolerância: até 85% de similaridade
  */
 
 // Mapa de acentos comuns → sem acento
