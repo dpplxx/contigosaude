@@ -70,7 +70,7 @@ function Header({ tema, onToggleTema, onAtivarNotificacoes, sessao, onSair }) {
             className="text-2xl sm:text-3xl tracking-tight"
             style={{ fontFamily: "Georgia, 'Times New Roman', serif", color: "var(--text)" }}
           >
-            Fisio em Casa
+            Contigo Saúde
           </h1>
         </div>
         <div className="flex items-center gap-2">
@@ -101,7 +101,7 @@ function Header({ tema, onToggleTema, onAtivarNotificacoes, sessao, onSair }) {
         </div>
       </div>
       <p className="text-sm sm:text-[15px]" style={{ color: "var(--muted1)" }}>
-        Cuidado que chega até você. Fisioterapia domiciliar com profissionais da sua região.
+        Saúde domiciliar com profissionais da sua região.
       </p>
     </header>
   );
