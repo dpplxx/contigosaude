@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { MapPin, Phone, MessageCircle, Loader } from "lucide-react";
+import { MapPin, Phone, MessageCircle, Loader, DollarSign } from "lucide-react";
 import { Card, Field, TextInput, SelectInput, PrimaryButton } from "./ui";
 import { CepInput, PhoneGate } from "./Compartilhados";
 import { ESPECIALIDADES_PACIENTE, mensagemDeErro, waLink } from "../lib/utils";
@@ -214,13 +214,22 @@ function CartaFisio({ fisio, whatsappPaciente }) {
           </p>
         )}
 
-        {fisio.bairro && (
-          <div className="flex items-center gap-1 mt-2 text-xs" style={{ color: "var(--muted1)" }}>
-            <MapPin size={14} />
-            {fisio.bairro}
-            {fisio.distancia_km && ` • ${fisio.distancia_km.toFixed(1)} km`}
-          </div>
-        )}
+        <div className="flex flex-col gap-2 mt-2">
+          {fisio.bairro && (
+            <div className="flex items-center gap-1 text-xs" style={{ color: "var(--muted1)" }}>
+              <MapPin size={14} />
+              {fisio.bairro}
+              {fisio.distancia_km && ` • ${fisio.distancia_km.toFixed(1)} km`}
+            </div>
+          )}
+
+          {fisio.valor_sessao && (
+            <div className="flex items-center gap-1 text-xs font-medium" style={{ color: "#E3A873" }}>
+              <DollarSign size={14} />
+              R$ {Number(fisio.valor_sessao).toFixed(2)}
+            </div>
+          )}
+        </div>
 
         {fisio.especialidades && fisio.especialidades.length > 0 && (
           <div className="flex gap-1 flex-wrap mt-3">
