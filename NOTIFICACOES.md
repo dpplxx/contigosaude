@@ -149,3 +149,4 @@ curl -X POST http://localhost:54321/functions/v1/notify-sendgrid \
 - [ ] Adicionar API key ao GitHub Secrets
 - [ ] Testar fluxo de notificação
 - [ ] Implementar UI de preferências no app (fisio pode desativar notificações)
+# Notificações configuradas
