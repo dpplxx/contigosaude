@@ -22,6 +22,7 @@ import {
 } from "./ui";
 import { AgendamentoInfo, CepInput, ChatThread, PhoneGate } from "./Compartilhados";
 import { EthicalCheckbox, PrototypeWarning } from "./Ethics";
+import { BuscaFisios } from "./BuscaFisios";
 import { formatarDistancia } from "../lib/geo";
 import { avaliar, criarPedido, meusPedidos, registrarClique } from "../lib/api";
 import {
@@ -102,149 +103,10 @@ function PedidoEnviado({ fisiosProximos, onNovoPedido }) {
 }
 
 export function RequestForm({ onToast }) {
-  const [form, setForm] = useState(REQUEST_INITIAL);
-  const [saving, setSaving] = useState(false);
-  const [erro, setErro] = useState("");
-  const [enviado, setEnviado] = useState(null);
-
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-
-  const aplicarEndereco = (endereco) =>
-    setForm((f) => ({
-      ...f,
-      cep: endereco.cep,
-      cidade: endereco.cidade || f.cidade,
-      bairro: endereco.bairro || f.bairro,
-      uf: endereco.uf || f.uf,
-      lat: endereco.lat,
-      lng: endereco.lng,
-    }));
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!form.nome || !form.whatsapp || !form.cidade || !form.bairro) return;
-    if (!form.concordaTermos || !form.concordaCompartilhamento) {
-      setErro("Você precisa aceitar os Termos de Uso e autorizar o compartilhamento de dados.");
-      return;
-    }
-    setSaving(true);
-    setErro("");
-    try {
-      const resultado = await criarPedido(form);
-      onToast?.("Pedido enviado com sucesso!");
-      setEnviado(resultado?.fisios_proximos ?? 0);
-      setForm(REQUEST_INITIAL);
-    } catch (e) {
-      setErro(mensagemDeErro(e, "Não foi possível enviar seu pedido agora."));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (enviado !== null) {
-    return <PedidoEnviado fisiosProximos={enviado} onNovoPedido={() => setEnviado(null)} />;
-  }
-
   return (
     <div className="space-y-4">
       <PrototypeWarning />
-      <Card>
-        <h2 className="text-lg font-medium mb-1">Peça atendimento domiciliar</h2>
-        <p className="text-sm mb-5" style={{ color: "var(--muted1)" }}>
-          Conte o que você precisa. Um fisioterapeuta da região entrará em contato.
-        </p>
-        <form onSubmit={submit}>
-        <Field label="Seu nome (ou nome de quem vai receber o atendimento)">
-          <TextInput value={form.nome} onChange={set("nome")} placeholder="Ex: Maria Silva" required />
-        </Field>
-        <Field label="WhatsApp para contato">
-          <PhoneInput value={form.whatsapp} onChange={set("whatsapp")} required />
-        </Field>
-        <Field label="Tipo de atendimento">
-          <SelectInput value={form.especialidade} onChange={set("especialidade")}>
-            {ESPECIALIDADES_PACIENTE.map((e) => (
-              <option key={e} value={e}>
-                {e}
-              </option>
-            ))}
-          </SelectInput>
-        </Field>
-        <CepInput
-          valor={form.cep}
-          onChange={(cep) => setForm((f) => ({ ...f, cep }))}
-          onResolvido={aplicarEndereco}
-          ajuda="Usamos só para achar quem atende perto de você."
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-          <Field label="Cidade">
-            <TextInput
-              value={form.cidade}
-              onChange={set("cidade")}
-              placeholder="Ex: São Paulo"
-              required
-            />
-          </Field>
-          <Field label="Bairro">
-            <TextInput
-              value={form.bairro}
-              onChange={set("bairro")}
-              placeholder="Ex: Tatuapé"
-              required
-            />
-          </Field>
-        </div>
-        <Field label="Quando você precisa do atendimento?">
-          <SelectInput value={form.urgencia} onChange={set("urgencia")}>
-            {URGENCIAS.map((u) => (
-              <option key={u} value={u}>
-                {u}
-              </option>
-            ))}
-          </SelectInput>
-        </Field>
-        <Field label="Alguma observação? (opcional)">
-          <TextArea
-            value={form.observacoes}
-            onChange={set("observacoes")}
-            rows={3}
-            placeholder="Ex: paciente pós-cirúrgico, dificuldade de locomoção..."
-          />
-        </Field>
-
-        <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
-          <p className="text-sm font-medium mb-3" style={{ color: "#E3A873" }}>
-            🔒 Consentimento do Paciente
-          </p>
-
-          <EthicalCheckbox
-            id="termos_paciente"
-            checked={form.concordaTermos}
-            onChange={(val) => setForm((f) => ({ ...f, concordaTermos: val }))}
-            label="Li e concordo com os Termos de Uso e a Política de Privacidade."
-            modalTitle="Termos de Uso e Privacidade"
-            modalContent={`${TERMOS_DE_USO}\n\n---\n\n${POLITICA_PRIVACIDADE}`}
-          />
-
-          <EthicalCheckbox
-            id="compartilhamento_paciente"
-            checked={form.concordaCompartilhamento}
-            onChange={(val) => setForm((f) => ({ ...f, concordaCompartilhamento: val }))}
-            label="Autorizo o compartilhamento dos meus dados (nome, WhatsApp, localização e necessidades) com o fisioterapeuta selecionado."
-            modalTitle="Compartilhamento de Dados"
-            modalContent="Seus dados de contato e informações sobre sua saúde serão compartilhados apenas com o fisioterapeuta que for selecionado para realizar seu atendimento. Nenhum dado será vendido ou repassado a terceiros não envolvidos no processo."
-          />
-        </div>
-
-        <ErroInline>{erro}</ErroInline>
-        <PrimaryButton type="submit" loading={saving}>
-          Enviar pedido <ArrowRight size={16} />
-        </PrimaryButton>
-        <p className="text-xs mt-4" style={{ color: "var(--muted3)" }}>
-          Seus dados ficam visíveis apenas para a equipe do Fisio em Casa e para o
-          fisioterapeuta designado ao seu atendimento.
-        </p>
-      </form>
-    </Card>
+      <BuscaFisios />
     </div>
   );
 }
