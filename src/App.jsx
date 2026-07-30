@@ -246,12 +246,16 @@ export default function App() {
         >
           <Stethoscope size={16} /> Sou fisioterapeuta
         </RoleButton>
-        <RoleButton active={role === "painel"} onClick={() => setRole("painel")}>
-          <ClipboardList size={16} /> Painel
-        </RoleButton>
-        <RoleButton active={role === "metricas"} onClick={() => setRole("metricas")}>
-          <BarChart3 size={16} /> Métricas
-        </RoleButton>
+        {sessao && (
+          <>
+            <RoleButton active={role === "painel"} onClick={() => setRole("painel")}>
+              <ClipboardList size={16} /> Painel
+            </RoleButton>
+            <RoleButton active={role === "metricas"} onClick={() => setRole("metricas")}>
+              <BarChart3 size={16} /> Métricas
+            </RoleButton>
+          </>
+        )}
       </div>
 
       {role === "paciente" && (
