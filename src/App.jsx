@@ -18,6 +18,7 @@ import { PhysioForm, PhysioDashboard } from "./components/Fisio";
 import { VerificacaoCREFITO } from "./components/VerificacaoCREFITO";
 import { Painel } from "./components/Painel";
 import { Login } from "./components/Login";
+import { ProtecaoPainel } from "./components/ProtecaoPainel";
 
 // A biblioteca de gráficos é o maior pedaço do bundle e só a área restrita usa.
 // Carregar sob demanda deixa a home do paciente bem mais leve no celular.
@@ -134,6 +135,9 @@ export default function App() {
   const [erroPainel, setErroPainel] = useState("");
   const [autorizada, setAutorizada] = useState(true);
   const [crefitoCertificado, setCrefitoCertificado] = useState(false);
+  const [painelDesbloqueado, setPainelDesbloqueado] = useState(
+    () => sessionStorage.getItem("painel_desbloqueado") === "true"
+  );
 
   const addToast = useCallback((msg, tipo = "ok") => {
     const id = uid();
@@ -206,6 +210,8 @@ export default function App() {
   const fazerLogout = async () => {
     await sair();
     setDadosPainel(PAINEL_VAZIO);
+    sessionStorage.removeItem("painel_desbloqueado");
+    setPainelDesbloqueado(false);
     addToast("Você saiu da área restrita.");
   };
 
@@ -318,7 +324,10 @@ export default function App() {
             </p>
           </Card>
         )}
-        {role === "painel" && sessao && autorizada && (
+        {role === "painel" && !painelDesbloqueado && (
+          <ProtecaoPainel onDesbloqueado={() => setPainelDesbloqueado(true)} />
+        )}
+        {role === "painel" && painelDesbloqueado && sessao && autorizada && (
           <Painel
             dados={dadosPainel}
             loading={loadingPainel}
