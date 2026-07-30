@@ -776,3 +776,109 @@ begin
     execute format('grant execute on function public.%s to anon, authenticated', fn);
   end loop;
 end $$;
+
+-- ============================================================================
+-- SEGURANÇA: AUDITORIA, SOFT DELETE, CRIPTOGRAFIA (GRÁTIS)
+-- ============================================================================
+
+-- 1. SOFT DELETE: marcar como deletado, não remover dados
+alter table public.fisios add column if not exists deletado_em timestamptz;
+alter table public.pedidos add column if not exists deletado_em timestamptz;
+
+-- RLS automático: nunca mostrar dados deletados
+create policy soft_delete_fisios on public.fisios for select
+  using (deletado_em IS NULL)
+  to authenticated;
+
+create policy soft_delete_pedidos on public.pedidos for select
+  using (deletado_em IS NULL)
+  to authenticated;
+
+-- 2. CRIPTOGRAFIA: CREFITO e observações sensíveis (pgcrypto)
+alter table public.fisios add column if not exists crefito text;
+alter table public.fisios add column if not exists crefito_encrypted text;
+
+alter table public.pedidos add column if not exists observacoes_encrypted text;
+
+-- 3. AUDITORIA: log de quem fez o quê e quando
+create table if not exists public.auditoria (
+  id uuid primary key default gen_random_uuid(),
+  tabela text not null,
+  operacao text not null,
+  usuario_id uuid,
+  linha_id uuid,
+  dados_antigos jsonb,
+  dados_novos jsonb,
+  ip_address inet,
+  user_agent text,
+  criada_em timestamptz not null default now()
+);
+
+-- Índices para auditoria eficiente
+create index if not exists auditoria_tabela_idx on public.auditoria (tabela, criada_em desc);
+create index if not exists auditoria_usuario_idx on public.auditoria (usuario_id, criada_em desc);
+create index if not exists auditoria_linha_idx on public.auditoria (linha_id, criada_em desc);
+
+-- Retenção automática: deletar registros com mais de 90 dias
+-- Executar manualmente 1x ao mês ou via cron job
+create or replace function public.hc_limpar_auditoria()
+returns void
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  delete from auditoria
+  where criada_em < now() - interval '90 days';
+$$;
+
+-- 4. FUNÇÃO PARA ENCRIPTAR DADOS SENSÍVEIS
+create or replace function public.hc_encriptar_crefito(p_crefito text)
+returns text
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  select pgp_sym_encrypt(p_crefito, 'chave-segura-fisio-em-casa-2026');
+$$;
+
+create or replace function public.hc_descriptografar_crefito(p_encrypted text)
+returns text
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  select pgp_sym_decrypt(p_encrypted::bytea, 'chave-segura-fisio-em-casa-2026');
+$$;
+
+-- 5. FUNÇÃO PARA ANONIMIZAR DADOS (LGPD)
+create or replace function public.hc_anonimizar_paciente(p_paciente_id uuid)
+returns void
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  update public.pedidos
+  set
+    nome = 'Paciente Anônimo',
+    whatsapp = null,
+    observacoes = null,
+    observacoes_encrypted = null,
+    deletado_em = now()
+  where id = p_paciente_id;
+
+  update public.agendamentos
+  set status = 'cancelado'
+  where pedido_id = p_paciente_id;
+$$;
+
+-- 6. PERMISSÕES
+alter table public.auditoria enable row level security;
+revoke all on public.auditoria from anon;
+create policy auditoria_admin_only on public.auditoria for all to authenticated
+  using (public.hc_e_admin())
+  with check (public.hc_e_admin());
+
+grant execute on function public.hc_limpar_auditoria() to authenticated;
+grant execute on function public.hc_encriptar_crefito(text) to anon, authenticated;
+grant execute on function public.hc_descriptografar_crefito(text) to authenticated;
+grant execute on function public.hc_anonimizar_paciente(uuid) to authenticated;
