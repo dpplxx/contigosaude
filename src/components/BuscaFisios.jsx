@@ -5,6 +5,7 @@ import { CepInput, PhoneGate } from "./Compartilhados";
 import { ESPECIALIDADES_PACIENTE, mensagemDeErro, waLink } from "../lib/utils";
 import { supabase } from "../lib/supabase";
 import { criarPedido } from "../lib/api";
+import { normalizarTexto } from "../lib/normalizacao";
 
 const BUSCA_INITIAL = {
   nome: "",
@@ -122,17 +123,23 @@ export function BuscaFisios() {
               <TextInput
                 value={form.cidade}
                 onChange={set("cidade")}
-                placeholder="Ex: São Paulo"
+                placeholder="Ex: São Paulo (ou Sao Paulo)"
                 disabled={loading}
               />
+              <p className="text-xs mt-1" style={{ color: "var(--muted2)" }}>
+                💡 Funciona sem acentos: "Sao Paulo", "Santos", etc
+              </p>
             </Field>
             <Field label="Bairro">
               <TextInput
                 value={form.bairro}
                 onChange={set("bairro")}
-                placeholder="Ex: Tatuapé"
+                placeholder="Ex: Tatuapé (ou Tatuape)"
                 disabled={loading}
               />
+              <p className="text-xs mt-1" style={{ color: "var(--muted2)" }}>
+                💡 Funciona sem acentos: "Tatuape", "Centro", etc
+              </p>
             </Field>
           </div>
 
