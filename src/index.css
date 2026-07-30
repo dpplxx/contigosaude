@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #1c2a28;
+  --text: #f2ede4;
+  --card: #24352f;
+  --card-inner: #14231f;
+  --border: #33443e;
+  --border-soft: #3a4a44;
+  --muted1: #a9b8b2;
+  --muted2: #8b9b94;
+  --muted3: #6e7d77;
+  --muted4: #c6d4ce;
+}
+
+.theme-light {
+  --bg: #f2ede4;
+  --text: #1c2a28;
+  --card: #ffffff;
+  --card-inner: #f7f3ec;
+  --border: #d9cfbe;
+  --border-soft: #e1d8c8;
+  --muted1: #5b6560;
+  --muted2: #6b7671;
+  --muted3: #8a938e;
+  --muted4: #3f4a44;
+}
+
+body {
+  margin: 0;
+}
+
+@keyframes portico-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.08);
+  }
+}
+
+.portico-glow {
+  animation: portico-glow 4.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portico-glow {
+    animation: none;
+  }
+}
+
+.ficha-input {
+  background: #f2ede4;
+  color: #14231f;
+  border-color: #3a4a44;
+  color-scheme: light;
+}
+
+.ficha-input::placeholder {
+  color: #7a8580;
+}
+
+.ficha-input:focus {
+  border-color: #c6693d;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast-item {
+  animation: toast-in 0.2s ease-out;
+}

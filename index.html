@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1C2A28" />
+    <title>Fisio em Casa — fisioterapia domiciliar perto de você</title>
+    <meta
+      name="description"
+      content="Conectamos quem precisa de fisioterapia em casa a fisioterapeutas que atendem na região. Diga onde você mora e encontramos quem está perto."
+    />
+    <meta property="og:title" content="Fisio em Casa" />
+    <meta
+      property="og:description"
+      content="Fisioterapia domiciliar com profissionais da sua região. Sem taxa para o paciente."
+    />
+    <meta property="og:type" content="website" />
+    <style>
+      :root {
+        --bg: #1c2a28;
+        --card: #24352f;
+        --border: #33443e;
+        --text: #f2ede4;
+        --muted: #a9b8b2;
+        --muted-soft: #8b9b94;
+        --terracota: #c6693d;
+        --areia: #e3a873;
+        --verde: #8fae8b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .wrap {
+        max-width: 62rem;
+        margin: 0 auto;
+        padding: 0 1.25rem;
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: Georgia, "Times New Roman", serif;
+        font-weight: 400;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        margin: 0;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      /* ---------- topo ---------- */
+
+      header {
+        padding: 2rem 0 0;
+      }
+
+      .marca {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .marca-icone {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.6rem;
+        background: rgba(198, 105, 61, 0.13);
+        border: 1px solid rgba(198, 105, 61, 0.33);
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+
+      .marca-nome {
+        font-family: Georgia, serif;
+        font-size: 1.35rem;
+      }
+
+      /* ---------- herói ---------- */
+
+      .heroi {
+        position: relative;
+        padding: 3.5rem 0 3rem;
+      }
+
+      .brilho {
+        position: absolute;
+        top: -2rem;
+        left: -3rem;
+        width: 16rem;
+        height: 16rem;
+        background: var(--areia);
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.16;
+        pointer-events: none;
+        animation: pulsar 5s ease-in-out infinite;
+      }
+
+      @keyframes pulsar {
+        0%,
+        100% {
+          opacity: 0.13;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.22;
+          transform: scale(1.09);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .brilho {
+          animation: none;
+        }
+      }
+
+      .heroi h1 {
+        font-size: clamp(2.1rem, 6vw, 3.4rem);
+        max-width: 18ch;
+        position: relative;
+      }
+
+      .heroi .linha-fina {
+        color: var(--muted);
+        font-size: clamp(1rem, 2.4vw, 1.2rem);
+        margin-top: 1.1rem;
+        max-width: 46ch;
+        position: relative;
+      }
+
+      /* ---------- botões ---------- */
+
+      .acoes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.85rem;
+        margin-top: 2.2rem;
+        position: relative;
+      }
+
+      .botao {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.9rem 1.5rem;
+        border-radius: 0.7rem;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 1rem;
+        transition:
+          transform 0.15s ease,
+          filter 0.15s ease;
+      }
+
+      .botao:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.06);
+      }
+
+      .botao:active {
+        transform: translateY(0);
+      }
+
+      .botao-principal {
+        background: var(--terracota);
+        color: #14231f;
+      }
+
+      .botao-secundario {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+
+      /* ---------- seções ---------- */
+
+      section {
+        padding: 3rem 0;
+        border-top: 1px solid var(--border);
+      }
+
+      section h2 {
+        font-size: clamp(1.5rem, 3.6vw, 2rem);
+      }
+
+      .subtitulo {
+        color: var(--muted);
+        margin-top: 0.6rem;
+        max-width: 52ch;
+      }
+
+      .passos {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+        gap: 1.1rem;
+        margin-top: 2rem;
+        padding: 0;
+        list-style: none;
+        counter-reset: passo;
+      }
+
+      .passo {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 0.9rem;
+        padding: 1.4rem;
+      }
+
+      .passo::before {
+        counter-increment: passo;
+        content: counter(passo);
+        display: grid;
+        place-items: center;
+        width: 1.9rem;
+        height: 1.9rem;
+        border-radius: 50%;
+        background: rgba(227, 168, 115, 0.16);
+        color: var(--areia);
+        font-family: Georgia, serif;
+        font-size: 0.95rem;
+        margin-bottom: 0.8rem;
+      }
+
+      .passo h3 {
+        font-size: 1.1rem;
+        margin-bottom: 0.4rem;
+      }
+
+      .passo p {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      /* ---------- destaque ---------- */
+
+      .destaque {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        padding: 1.75rem;
+        margin-top: 2rem;
+      }
+
+      .destaque h3 {
+        font-size: 1.15rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .destaque p {
+        color: var(--muted);
+      }
+
+      .lista-limpa {
+        list-style: none;
+        padding: 0;
+        margin: 1.2rem 0 0;
+        display: grid;
+        gap: 0.7rem;
+      }
+
+      .lista-limpa li {
+        display: flex;
+        gap: 0.65rem;
+        color: var(--muted);
+        font-size: 0.97rem;
+      }
+
+      .marcador {
+        color: var(--verde);
+        flex-shrink: 0;
+        margin-top: 0.15rem;
+      }
+
+      .aviso-honesto {
+        border-left: 3px solid var(--areia);
+        padding-left: 1.1rem;
+        margin-top: 2rem;
+        color: var(--muted);
+      }
+
+      .aviso-honesto strong {
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      /* ---------- rodapé ---------- */
+
+      footer {
+        padding: 2.5rem 0 3.5rem;
+        border-top: 1px solid var(--border);
+        color: var(--muted-soft);
+        font-size: 0.87rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem 1.5rem;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      footer a {
+        color: var(--muted);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="marca">
+          <span class="marca-icone" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E3A873" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 10.5 12 3l9 7.5" />
+              <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
+            </svg>
+          </span>
+          <span class="marca-nome">Fisio em Casa</span>
+        </div>
+      </header>
+
+      <div class="heroi">
+        <div class="brilho" aria-hidden="true"></div>
+        <h1>Fisioterapia que vai até você</h1>
+        <p class="linha-fina">
+          Diga onde você mora e encontramos fisioterapeutas que atendem a domicílio na sua região.
+          Sem taxa para o paciente.
+        </p>
+        <div class="acoes">
+          <a class="botao botao-principal" href="./app.html?papel=paciente">
+            Preciso de atendimento
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </a>
+          <a class="botao botao-secundario" href="./app.html?papel=fisio">
+            Sou fisioterapeuta
+          </a>
+        </div>
+      </div>
+
+      <!--
+        VÍDEO EXPLICATIVO
+        Quando você gravar o vídeo, suba no YouTube como "não listado" e troque
+        o ID abaixo pelo do seu vídeo. Depois é só apagar estas duas linhas de
+        comentário para a seção aparecer no site.
+
+      <section>
+        <h2>Como funciona, em 1 minuto</h2>
+        <div style="position:relative;padding-top:56.25%;margin-top:1.5rem;border-radius:.9rem;overflow:hidden;border:1px solid var(--border)">
+          <iframe
+            src="https://www.youtube-nocookie.com/embed/SEU_ID_AQUI"
+            title="Como funciona o Fisio em Casa"
+            style="position:absolute;inset:0;width:100%;height:100%;border:0"
+            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </section>
+      -->
+
+      <section>
+        <h2>Como funciona</h2>
+        <p class="subtitulo">
+          Três passos, tudo pelo celular. Você não precisa criar conta nem instalar nada.
+        </p>
+        <ol class="passos">
+          <li class="passo">
+            <h3>Conte o que precisa</h3>
+            <p>
+              Informe seu CEP, o tipo de atendimento e quando precisa. Leva menos de um minuto.
+            </p>
+          </li>
+          <li class="passo">
+            <h3>A gente encontra quem está perto</h3>
+            <p>
+              Cruzamos sua localização com a área de atendimento de cada profissional e calculamos a
+              distância real.
+            </p>
+          </li>
+          <li class="passo">
+            <h3>Combine o horário</h3>
+            <p>
+              Nossa equipe confirma tudo com você pelo WhatsApp e apresenta o fisioterapeuta que vai
+              te atender.
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Para fisioterapeutas</h2>
+        <p class="subtitulo">
+          Se você atende a domicílio, o cadastro é gratuito e leva dois minutos.
+        </p>
+        <div class="destaque">
+          <h3>Você recebe pedidos da sua região, não de qualquer lugar</h3>
+          <p>
+            Cadastre seu CEP de partida e diga até quantos quilômetros aceita se deslocar. Só chegam
+            pedidos dentro desse raio.
+          </p>
+          <ul class="lista-limpa">
+            <li>
+              <span class="marcador" aria-hidden="true">✓</span>
+              <span>Sem mensalidade e sem comissão sobre o seu atendimento</span>
+            </li>
+            <li>
+              <span class="marcador" aria-hidden="true">✓</span>
+              <span>Você define suas especialidades, sua área e o valor da sua sessão</span>
+            </li>
+            <li>
+              <span class="marcador" aria-hidden="true">✓</span>
+              <span>Seu telefone não fica exposto: o contato passa pela equipe</span>
+            </li>
+          </ul>
+        </div>
+        <div class="acoes">
+          <a class="botao botao-principal" href="./app.html?papel=fisio">
+            Quero me cadastrar
+          </a>
+        </div>
+      </section>
+
+      <section>
+        <h2>Estamos começando</h2>
+        <div class="aviso-honesto">
+          <p>
+            <strong>O Fisio em Casa acabou de nascer.</strong> Estamos montando a rede de
+            profissionais agora, região por região. Isso significa que pode não haver ainda alguém
+            cadastrado no seu bairro — mas todo pedido fica registrado, e assim que um profissional
+            passar a atender a sua área, a gente te procura.
+          </p>
+          <p style="margin-top: 0.9rem">
+            Se você é fisioterapeuta e chegou até aqui, é um bom momento para entrar: quem se
+            cadastra agora recebe os primeiros pedidos da região.
+          </p>
+        </div>
+      </section>
+
+      <footer>
+        <span>Fisio em Casa · fisioterapia domiciliar</span>
+        <span><a href="./app.html">Acessar o aplicativo</a></span>
+      </footer>
+    </div>
+  </body>
+</html>

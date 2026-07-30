@@ -1,0 +1,25 @@
+import { resolve } from "node:path";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+
+// O site tem duas páginas:
+//   index.html  → landing institucional, HTML puro, carrega instantâneo
+//   app.html    → o aplicativo React
+// Separar as duas evita que quem só está conhecendo o serviço precise baixar
+// todo o bundle do app.
+//
+// O GitHub Pages serve o site em /<nome-do-repo>/, então o build precisa saber
+// disso. Localmente (npm run dev) o base fica em "/" e tudo funciona normal.
+export default defineConfig({
+  base: process.env.VITE_BASE_PATH || "/",
+  plugins: [react(), tailwindcss()],
+  build: {
+    rollupOptions: {
+      input: {
+        landing: resolve(import.meta.dirname, "index.html"),
+        app: resolve(import.meta.dirname, "app.html"),
+      },
+    },
+  },
+});
