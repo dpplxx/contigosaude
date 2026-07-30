@@ -94,7 +94,7 @@ export function pluralAvaliacoes(n) {
 }
 
 // Distância em linha reta entre dois pontos, em km. É a mesma fórmula de
-// haversine que a função fec_distancia_km usa no banco — aqui serve para o
+// haversine que a função hc_distancia_km usa no banco — aqui serve para o
 // Painel, que lê as tabelas direto e calcula na tela.
 export function distanciaKm(lat1, lng1, lat2, lng2) {
   if (lat1 == null || lng1 == null || lat2 == null || lng2 == null) return null;

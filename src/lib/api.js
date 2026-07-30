@@ -20,7 +20,7 @@ async function rpc(nome, params) {
 // ---------------------------------------------------------------------------
 
 export function criarPedido(form) {
-  return rpc("fec_criar_pedido", {
+  return rpc("hc_criar_pedido", {
     p_nome: form.nome,
     p_whatsapp: form.whatsapp,
     p_especialidade: form.especialidade,
@@ -37,7 +37,7 @@ export function criarPedido(form) {
 
 export function cadastrarFisio(form) {
   const valor = parseFloat(String(form.valorSessao).replace(",", "."));
-  return rpc("fec_cadastrar_fisio", {
+  return rpc("hc_cadastrar_fisio", {
     p_nome: form.nome,
     p_whatsapp: form.whatsapp,
     p_especialidades: form.especialidades,
@@ -60,17 +60,17 @@ export function cadastrarFisio(form) {
 // ---------------------------------------------------------------------------
 
 export async function meusPedidos(whatsapp) {
-  const data = await rpc("fec_meus_pedidos", { p_whatsapp: whatsapp });
+  const data = await rpc("hc_meus_pedidos", { p_whatsapp: whatsapp });
   return data || [];
 }
 
 export async function painelFisio(whatsapp) {
-  const data = await rpc("fec_painel_fisio", { p_whatsapp: whatsapp });
+  const data = await rpc("hc_painel_fisio", { p_whatsapp: whatsapp });
   return data || { fisio: null };
 }
 
 export function enviarMensagem({ agendamentoId, whatsapp, remetente, remetenteNome, texto }) {
-  return rpc("fec_enviar_mensagem", {
+  return rpc("hc_enviar_mensagem", {
     p_agendamento_id: agendamentoId,
     p_whatsapp: whatsapp,
     p_remetente: remetente,
@@ -80,7 +80,7 @@ export function enviarMensagem({ agendamentoId, whatsapp, remetente, remetenteNo
 }
 
 export function marcarStatusAgendamento({ agendamentoId, status, whatsapp }) {
-  return rpc("fec_marcar_status_agendamento", {
+  return rpc("hc_marcar_status_agendamento", {
     p_agendamento_id: agendamentoId,
     p_status: status,
     p_whatsapp: whatsapp,
@@ -88,7 +88,7 @@ export function marcarStatusAgendamento({ agendamentoId, status, whatsapp }) {
 }
 
 export function avaliar({ fisioId, nota, comentario, whatsapp }) {
-  return rpc("fec_avaliar", {
+  return rpc("hc_avaliar", {
     p_fisio_id: fisioId,
     p_nota: nota,
     p_comentario: comentario || null,
@@ -98,7 +98,7 @@ export function avaliar({ fisioId, nota, comentario, whatsapp }) {
 
 export async function registrarClique(fisioId) {
   try {
-    await rpc("fec_registrar_clique", { p_fisio_id: fisioId });
+    await rpc("hc_registrar_clique", { p_fisio_id: fisioId });
   } catch {
     // O contador é só métrica: se falhar, não vale travar o clique do usuário.
   }
@@ -140,7 +140,7 @@ export function aoMudarSessao(callback) {
 // ---------------------------------------------------------------------------
 
 export async function ehAdmin() {
-  const { data, error } = await cliente().rpc("fec_e_admin");
+  const { data, error } = await cliente().rpc("hc_e_admin");
   if (error) throw error;
   return data === true;
 }

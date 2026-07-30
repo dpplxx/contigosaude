@@ -10,7 +10,7 @@
 -- Ninguém acessa as tabelas direto com a chave pública do site. O RLS está
 -- ligado e sem nenhuma política para visitante anônimo, então uma tentativa de
 -- ler a tabela de pedidos pelo navegador volta vazia. Todo acesso do público
--- passa pelas funções fec_* abaixo, que devolvem só o que a pessoa tem direito
+-- passa pelas funções hc_* abaixo, que devolvem só o que a pessoa tem direito
 -- de ver, identificada pelo próprio WhatsApp.
 --
 -- Você (logada no Painel) é o único papel com leitura ampla.
@@ -134,7 +134,7 @@ create table if not exists public.admins (
 alter table public.admins enable row level security;
 -- Nenhuma política: a tabela só é lida pela função abaixo, nunca pelo navegador.
 
-create or replace function public.fec_e_admin()
+create or replace function public.hc_e_admin()
 returns boolean
 language sql
 stable
@@ -144,7 +144,7 @@ as $$
   select exists (select 1 from admins where user_id = auth.uid());
 $$;
 
-grant execute on function public.fec_e_admin() to authenticated;
+grant execute on function public.hc_e_admin() to authenticated;
 
 -- ============================================================================
 -- RLS — tudo trancado, e depois liberado só para as contas administradoras
@@ -165,7 +165,7 @@ begin
     execute format('drop policy if exists painel_total on public.%I', t);
     execute format(
       'create policy painel_total on public.%I for all to authenticated '
-      || 'using (public.fec_e_admin()) with check (public.fec_e_admin())',
+      || 'using (public.hc_e_admin()) with check (public.hc_e_admin())',
       t
     );
   end loop;
@@ -183,9 +183,9 @@ revoke all on public.fisios, public.pedidos, public.agendamentos,
 -- uma função com "create or replace", então as assinaturas antigas saem antes.
 -- ============================================================================
 
-drop function if exists public.fec_compativel(text[], text, text[], text, text, text);
-drop function if exists public.fec_criar_pedido(text, text, text, text, text, text, text);
-drop function if exists public.fec_cadastrar_fisio(text, text, text[], text, text[], text, text, text, numeric);
+drop function if exists public.hc_compativel(text[], text, text[], text, text, text);
+drop function if exists public.hc_criar_pedido(text, text, text, text, text, text, text);
+drop function if exists public.hc_cadastrar_fisio(text, text, text[], text, text[], text, text, text, numeric);
 
 -- ============================================================================
 -- HELPERS
@@ -193,7 +193,7 @@ drop function if exists public.fec_cadastrar_fisio(text, text, text[], text, tex
 
 -- Normaliza um telefone digitado de qualquer jeito para a mesma chave de 8
 -- dígitos usada nas colunas geradas.
-create or replace function public.fec_chave(p_whatsapp text)
+create or replace function public.hc_chave(p_whatsapp text)
 returns text
 language sql
 immutable
@@ -204,7 +204,7 @@ $$;
 -- Distância em linha reta entre dois pontos, em quilômetros (fórmula de
 -- haversine). Não precisa de PostGIS nem de nenhuma extensão paga: é só
 -- trigonometria, roda em qualquer Postgres.
-create or replace function public.fec_distancia_km(
+create or replace function public.hc_distancia_km(
   p_lat1 double precision,
   p_lng1 double precision,
   p_lat2 double precision,
@@ -230,7 +230,7 @@ $$;
 -- Regra de compatibilidade. Preferimos distância real; quando falta coordenada
 -- de um dos lados, caímos no casamento por cidade e bairro em texto, que era o
 -- critério da primeira versão.
-create or replace function public.fec_compativel(
+create or replace function public.hc_compativel(
   p_especialidades text[],
   p_fisio_cidade text,
   p_fisio_bairros text[],
@@ -254,7 +254,7 @@ as $$
     )
     and case
       when p_fisio_lat is not null and p_pedido_lat is not null then
-        fec_distancia_km(p_fisio_lat, p_fisio_lng, p_pedido_lat, p_pedido_lng)
+        hc_distancia_km(p_fisio_lat, p_fisio_lng, p_pedido_lat, p_pedido_lng)
           <= coalesce(p_raio_km, 10)
       else
         (
@@ -280,7 +280,7 @@ $$;
 -- Devolve o id do pedido e quantos fisioterapeutas já atendem aquele endereço.
 -- O app usa esse número para dar uma resposta concreta na hora ("3 profissionais
 -- atendem sua região") em vez de um "recebemos seu pedido" genérico.
-create or replace function public.fec_criar_pedido(
+create or replace function public.hc_criar_pedido(
   p_nome text,
   p_whatsapp text,
   p_especialidade text,
@@ -306,7 +306,7 @@ begin
     raise exception 'Informe o nome de quem vai receber o atendimento.';
   end if;
 
-  if length(fec_chave(p_whatsapp)) < 8 then
+  if length(hc_chave(p_whatsapp)) < 8 then
     raise exception 'WhatsApp inválido.';
   end if;
 
@@ -319,7 +319,7 @@ begin
   if (
     select count(*)
     from pedidos
-    where whatsapp_chave = fec_chave(p_whatsapp)
+    where whatsapp_chave = hc_chave(p_whatsapp)
       and status = 'ativo'
   ) >= 5 then
     raise exception 'Você já tem pedidos abertos. Aguarde o contato da equipe.';
@@ -340,7 +340,7 @@ begin
 
   select count(*) into v_proximos
   from fisios f
-  where fec_compativel(
+  where hc_compativel(
     f.especialidades, f.cidade, f.bairros, f.lat, f.lng, f.raio_km,
     p_especialidade, trim(p_cidade), trim(p_bairro), p_lat, p_lng
   );
@@ -348,7 +348,7 @@ begin
   return jsonb_build_object('id', v_id, 'fisios_proximos', v_proximos);
 end $$;
 
-create or replace function public.fec_cadastrar_fisio(
+create or replace function public.hc_cadastrar_fisio(
   p_nome text,
   p_whatsapp text,
   p_especialidades text[],
@@ -376,7 +376,7 @@ begin
     raise exception 'Informe seu nome.';
   end if;
 
-  if length(fec_chave(p_whatsapp)) < 8 then
+  if length(hc_chave(p_whatsapp)) < 8 then
     raise exception 'WhatsApp inválido.';
   end if;
 
@@ -393,7 +393,7 @@ begin
   end if;
 
   -- Recadastro com o mesmo telefone atualiza o cadastro em vez de duplicar.
-  select id into v_id from fisios where whatsapp_chave = fec_chave(p_whatsapp) limit 1;
+  select id into v_id from fisios where whatsapp_chave = hc_chave(p_whatsapp) limit 1;
 
   if v_id is not null then
     update fisios set
@@ -438,7 +438,7 @@ end $$;
 -- LEITURA DO PACIENTE — só os próprios pedidos, achados pelo WhatsApp
 -- ============================================================================
 
-create or replace function public.fec_meus_pedidos(p_whatsapp text)
+create or replace function public.hc_meus_pedidos(p_whatsapp text)
 returns jsonb
 language sql
 security definer
@@ -470,7 +470,7 @@ as $$
               'especialidades', f.especialidades,
               'formacao', f.formacao,
               'distancia_km', round(
-                fec_distancia_km(f.lat, f.lng, p.lat, p.lng)::numeric, 1
+                hc_distancia_km(f.lat, f.lng, p.lat, p.lng)::numeric, 1
               )
             ),
             'mensagens', (
@@ -501,15 +501,15 @@ as $$
     '[]'::jsonb
   )
   from pedidos p
-  where p.whatsapp_chave = fec_chave(p_whatsapp)
-    and length(fec_chave(p_whatsapp)) = 8;
+  where p.whatsapp_chave = hc_chave(p_whatsapp)
+    and length(hc_chave(p_whatsapp)) = 8;
 $$;
 
 -- ============================================================================
 -- LEITURA DO FISIOTERAPEUTA — o próprio cadastro, agenda e pedidos que casam
 -- ============================================================================
 
-create or replace function public.fec_painel_fisio(p_whatsapp text)
+create or replace function public.hc_painel_fisio(p_whatsapp text)
 returns jsonb
 language plpgsql
 security definer
@@ -518,11 +518,11 @@ as $$
 declare
   v_fisio fisios%rowtype;
 begin
-  if length(fec_chave(p_whatsapp)) <> 8 then
+  if length(hc_chave(p_whatsapp)) <> 8 then
     return jsonb_build_object('fisio', null);
   end if;
 
-  select * into v_fisio from fisios where whatsapp_chave = fec_chave(p_whatsapp) limit 1;
+  select * into v_fisio from fisios where whatsapp_chave = hc_chave(p_whatsapp) limit 1;
 
   if v_fisio.id is null then
     return jsonb_build_object('fisio', null);
@@ -559,7 +559,7 @@ begin
               'especialidade', p.especialidade,
               'observacoes', p.observacoes,
               'distancia_km', round(
-                fec_distancia_km(v_fisio.lat, v_fisio.lng, p.lat, p.lng)::numeric, 1
+                hc_distancia_km(v_fisio.lat, v_fisio.lng, p.lat, p.lng)::numeric, 1
               )
             ),
             'mensagens', (
@@ -600,10 +600,10 @@ begin
             'urgencia', p.urgencia,
             'criado_em', p.criado_em,
             'distancia_km', round(
-              fec_distancia_km(v_fisio.lat, v_fisio.lng, p.lat, p.lng)::numeric, 1
+              hc_distancia_km(v_fisio.lat, v_fisio.lng, p.lat, p.lng)::numeric, 1
             )
           ) order by
-            fec_distancia_km(v_fisio.lat, v_fisio.lng, p.lat, p.lng) nulls last,
+            hc_distancia_km(v_fisio.lat, v_fisio.lng, p.lat, p.lng) nulls last,
             p.criado_em desc
         ),
         '[]'::jsonb
@@ -611,7 +611,7 @@ begin
       from pedidos p
       where p.status = 'ativo'
         and not exists (select 1 from agendamentos a where a.pedido_id = p.id)
-        and fec_compativel(
+        and hc_compativel(
           v_fisio.especialidades, v_fisio.cidade, v_fisio.bairros,
           v_fisio.lat, v_fisio.lng, v_fisio.raio_km,
           p.especialidade, p.cidade, p.bairro, p.lat, p.lng
@@ -640,7 +640,7 @@ end $$;
 -- ============================================================================
 
 -- Só manda mensagem quem é uma das duas pontas daquele agendamento.
-create or replace function public.fec_enviar_mensagem(
+create or replace function public.hc_enviar_mensagem(
   p_agendamento_id uuid,
   p_whatsapp text,
   p_remetente text,
@@ -667,8 +667,8 @@ begin
     join fisios f on f.id = a.fisio_id
     where a.id = p_agendamento_id
       and (
-        (p_remetente = 'paciente' and p.whatsapp_chave = fec_chave(p_whatsapp))
-        or (p_remetente = 'fisio' and f.whatsapp_chave = fec_chave(p_whatsapp))
+        (p_remetente = 'paciente' and p.whatsapp_chave = hc_chave(p_whatsapp))
+        or (p_remetente = 'fisio' and f.whatsapp_chave = hc_chave(p_whatsapp))
       )
   ) into v_ok;
 
@@ -684,7 +684,7 @@ begin
 end $$;
 
 -- O fisioterapeuta marca o próprio atendimento como concluído ou cancelado.
-create or replace function public.fec_marcar_status_agendamento(
+create or replace function public.hc_marcar_status_agendamento(
   p_agendamento_id uuid,
   p_status text,
   p_whatsapp text
@@ -704,7 +704,7 @@ begin
   from fisios f
   where a.id = p_agendamento_id
     and f.id = a.fisio_id
-    and f.whatsapp_chave = fec_chave(p_whatsapp);
+    and f.whatsapp_chave = hc_chave(p_whatsapp);
 
   if not found then
     raise exception 'Sem permissão para alterar este agendamento.';
@@ -712,7 +712,7 @@ begin
 end $$;
 
 -- Só avalia quem teve um atendimento com aquele fisioterapeuta.
-create or replace function public.fec_avaliar(
+create or replace function public.hc_avaliar(
   p_fisio_id uuid,
   p_nota integer,
   p_comentario text,
@@ -733,7 +733,7 @@ begin
     from agendamentos a
     join pedidos p on p.id = a.pedido_id
     where a.fisio_id = p_fisio_id
-      and p.whatsapp_chave = fec_chave(p_whatsapp)
+      and p.whatsapp_chave = hc_chave(p_whatsapp)
   ) then
     raise exception 'Você só pode avaliar um profissional que já te atendeu.';
   end if;
@@ -743,7 +743,7 @@ begin
 end $$;
 
 -- Contador de quantas vezes o botão de WhatsApp daquele profissional foi usado.
-create or replace function public.fec_registrar_clique(p_fisio_id uuid)
+create or replace function public.hc_registrar_clique(p_fisio_id uuid)
 returns void
 language plpgsql
 security definer
@@ -762,14 +762,14 @@ declare
   fn text;
 begin
   foreach fn in array array[
-    'fec_criar_pedido(text,text,text,text,text,text,text,text,text,double precision,double precision)',
-    'fec_cadastrar_fisio(text,text,text[],text,text,text[],text,text,numeric,text,text,double precision,double precision,integer)',
-    'fec_meus_pedidos(text)',
-    'fec_painel_fisio(text)',
-    'fec_enviar_mensagem(uuid,text,text,text,text)',
-    'fec_marcar_status_agendamento(uuid,text,text)',
-    'fec_avaliar(uuid,integer,text,text)',
-    'fec_registrar_clique(uuid)'
+    'hc_criar_pedido(text,text,text,text,text,text,text,text,text,double precision,double precision)',
+    'hc_cadastrar_fisio(text,text,text[],text,text,text[],text,text,numeric,text,text,double precision,double precision,integer)',
+    'hc_meus_pedidos(text)',
+    'hc_painel_fisio(text)',
+    'hc_enviar_mensagem(uuid,text,text,text,text)',
+    'hc_marcar_status_agendamento(uuid,text,text)',
+    'hc_avaliar(uuid,integer,text,text)',
+    'hc_registrar_clique(uuid)'
   ]
   loop
     execute format('revoke all on function public.%s from public', fn);
