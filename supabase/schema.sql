@@ -849,6 +849,9 @@ create policy soft_delete_pedidos on public.pedidos for select
 -- 2. CRIPTOGRAFIA: CREFITO e observações sensíveis (pgcrypto)
 alter table public.fisios add column if not exists crefito text;
 alter table public.fisios add column if not exists crefito_encrypted text;
+alter table public.fisios add column if not exists crefito_status text default 'pendente'
+  check (crefito_status in ('pendente', 'verificado', 'rejeitado'));
+alter table public.fisios add column if not exists crefito_verificado_em timestamptz;
 
 alter table public.pedidos add column if not exists observacoes_encrypted text;
 
