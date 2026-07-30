@@ -459,5 +459,24 @@
         <span><a href="./app.html">Acessar o aplicativo</a></span>
       </footer>
     </div>
+
+    <script>
+      // Calcula o base path dinamicamente para funcionar tanto em dev (/)
+      // quanto em produção (/saude-domiciliar/)
+      function getAppUrl(papel) {
+        // Pega tudo antes de "index.html" ou deduz de location.pathname
+        const path = window.location.pathname;
+        const baseMatch = path.match(/^(.*?)(?:index\.html)?$/);
+        const basePath = baseMatch ? baseMatch[1] : path.replace(/[^/]*\.html$/, '');
+        return basePath + 'app.html' + (papel ? '?papel=' + papel : '');
+      }
+
+      // Atualiza todos os links para app.html
+      document.querySelectorAll('a[href*="app.html"]').forEach(link => {
+        const url = link.getAttribute('href');
+        const papel = new URL(url, window.location.href).searchParams.get('papel');
+        link.href = getAppUrl(papel);
+      });
+    </script>
   </body>
 </html>
