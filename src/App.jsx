@@ -16,6 +16,8 @@ import { Card, RoleButton, TabButton, ToastContainer } from "./components/ui";
 import { RequestForm, PatientTracking } from "./components/Paciente";
 import { PhysioForm, PhysioDashboard } from "./components/Fisio";
 import { VerificacaoCREFITO } from "./components/VerificacaoCREFITO";
+import { AuthPaciente } from "./components/AuthPaciente";
+import { MeusAgendamentos } from "./components/MeusAgendamentos";
 import { Painel } from "./components/Painel";
 import { Login } from "./components/Login";
 import { ProtecaoPainel } from "./components/ProtecaoPainel";
@@ -130,6 +132,7 @@ export default function App() {
   const [tema, setTema] = useState("escuro");
   const [toasts, setToasts] = useState([]);
   const [sessao, setSessao] = useState(null);
+  const [sessaoPaciente, setSessaoPaciente] = useState(null);
   const [dadosPainel, setDadosPainel] = useState(PAINEL_VAZIO);
   const [loadingPainel, setLoadingPainel] = useState(false);
   const [erroPainel, setErroPainel] = useState("");
@@ -266,6 +269,9 @@ export default function App() {
 
       {role === "paciente" && (
         <nav className="max-w-3xl mx-auto px-4 sm:px-6 flex gap-2 pb-4">
+          <TabButton active={pacienteView === "login"} onClick={() => setPacienteView("login")}>
+            Minha conta
+          </TabButton>
           <TabButton active={pacienteView === "pedido"} onClick={() => setPacienteView("pedido")}>
             Pedir atendimento
           </TabButton>
@@ -295,6 +301,9 @@ export default function App() {
       <main className="max-w-3xl mx-auto px-4 sm:px-6 pb-16 space-y-4">
         {!supabaseConfigurado && <AvisoSemChaves />}
 
+        {role === "paciente" && pacienteView === "login" && (
+          <AuthPaciente onAutenticado={setSessaoPaciente} />
+        )}
         {role === "paciente" && pacienteView === "pedido" && <RequestForm onToast={addToast} />}
         {role === "paciente" && pacienteView === "acompanhar" && (
           <PatientTracking onNotify={notificar} />
