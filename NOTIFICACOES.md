@@ -143,10 +143,48 @@ curl -X POST http://localhost:54321/functions/v1/notify-sendgrid \
   -d '{"email":"seu@email.com","nome_paciente":"Maria","especialidade":"Ortopédica"}'
 ```
 
+## Como ativar agora
+
+### 1. Criar conta SendGrid (gratuito)
+- Vá para [sendgrid.com](https://sendgrid.com)
+- Registre-se (10k emails/mês gratuitos)
+- Vá para **Settings → API Keys**
+- Gere uma nova API Key
+- Copie a chave
+
+### 2. Adicionar ao GitHub Secrets
+- GitHub → Settings → Secrets → New repository secret
+- Nome: `SENDGRID_API_KEY`
+- Valor: A chave que você copiou
+
+### 3. Testar localmente
+```bash
+# Seu arquivo .env.local
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+SENDGRID_API_KEY=sua_chave_aqui
+```
+
+### 4. Activar notificações no app
+No componente que cria um pedido, após `criarPedido()` fazer:
+
+```javascript
+import { notificarNovosPedidos } from '../lib/notificacoes'
+
+await criarPedido(form)
+await notificarNovosPedidos(resultado.id)
+```
+
+## Status atual
+
+- ✅ Função Supabase criada (`supabase/functions/notify-sendgrid/`)
+- ✅ Biblioteca de notificações criada (`src/lib/notificacoes.js`)
+- ⏳ Integração no app (próxima etapa)
+- ⏳ Testes de notificações
+
 ## Próximos Passos
 
 - [ ] Escolher serviço de email (SendGrid recomendado)
 - [ ] Adicionar API key ao GitHub Secrets
 - [ ] Testar fluxo de notificação
 - [ ] Implementar UI de preferências no app (fisio pode desativar notificações)
-# Notificações configuradas
