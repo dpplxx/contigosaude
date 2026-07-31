@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.111.0",
@@ -28,9 +30,5 @@
     "tailwindcss": "^4.3.3",
     "vite": "^8.1.1",
     "vitest": "^1.1.0"
-  },
-  "scripts": {
-    "test": "vitest",
-    "test:ui": "vitest --ui"
   }
 }
