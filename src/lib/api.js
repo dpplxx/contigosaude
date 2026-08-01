@@ -52,6 +52,8 @@ export function cadastrarFisio(form) {
     p_lat: form.lat ?? null,
     p_lng: form.lng ?? null,
     p_raio_km: Number(form.raioKm) || 10,
+    p_crefito: form.crefito || null,
+    p_crefito_uf: form.crefinoUf || null,
   });
 }
 
@@ -102,6 +104,23 @@ export async function registrarClique(fisioId) {
   } catch {
     // O contador é só métrica: se falhar, não vale travar o clique do usuário.
   }
+}
+
+// ---------------------------------------------------------------------------
+// Confiança pública — dados usados na landing e nos cards de fisio
+// ---------------------------------------------------------------------------
+
+export async function contarFisios() {
+  try {
+    return await rpc("hc_contar_fisios");
+  } catch {
+    return null;
+  }
+}
+
+export async function avaliacoesFisio(fisioId) {
+  const data = await rpc("hc_avaliacoes_fisio", { p_fisio_id: fisioId });
+  return data || [];
 }
 
 // ---------------------------------------------------------------------------

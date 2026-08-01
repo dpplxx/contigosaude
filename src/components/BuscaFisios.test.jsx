@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { BuscaFisios } from './BuscaFisios'
 
 vi.mock('../lib/supabase', () => ({
@@ -26,12 +25,12 @@ describe('BuscaFisios', () => {
     expect(button).toBeDisabled()
   })
 
-  it('exibe erro se campos obrigatórios faltarem', async () => {
-    const user = userEvent.setup()
-    render(<BuscaFisios />)
+  it('exibe erro se campos obrigatórios faltarem', () => {
+    const { container } = render(<BuscaFisios />)
 
-    const button = screen.getByRole('button', { name: /Buscar profissionais/i })
-    await user.click(button)
+    // O botão fica desabilitado sem cidade/bairro/whatsapp (testado acima), então
+    // simulamos o submit do form diretamente para exercitar a validação interna.
+    fireEvent.submit(container.querySelector('form'))
 
     expect(screen.getByText(/Informe a cidade e o bairro/)).toBeInTheDocument()
   })

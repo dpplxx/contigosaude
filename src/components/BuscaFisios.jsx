@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { MapPin, Phone, MessageCircle, Loader } from "lucide-react";
+import { MapPin, Phone, MessageCircle, Loader, ShieldCheck, Star } from "lucide-react";
 import { Card, Field, TextInput, SelectInput, PrimaryButton } from "./ui";
 import { CepInput, PhoneGate } from "./Compartilhados";
 import { ESPECIALIDADES_PACIENTE, mensagemDeErro, waLink } from "../lib/utils";
@@ -19,8 +19,22 @@ const BUSCA_INITIAL = {
   lng: null,
 };
 
+// As páginas de SEO por cidade (ex.: /fisioterapia-domiciliar/serra) linkam
+// para cá com ?cidade=Serra, pra pessoa não ter que redigitar o que já disse
+// na página de origem.
+function cidadeInicialDaUrl() {
+  try {
+    return new URLSearchParams(window.location.search).get("cidade") || "";
+  } catch {
+    return "";
+  }
+}
+
 export function BuscaFisios() {
-  const [form, setForm] = useState(BUSCA_INITIAL);
+  const [form, setForm] = useState(() => ({
+    ...BUSCA_INITIAL,
+    cidade: cidadeInicialDaUrl(),
+  }));
   const [fisios, setFisios] = useState(null);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
@@ -228,6 +242,26 @@ function CartaFisio({ fisio, whatsappPaciente }) {
             {fisio.distancia_km && ` • ${fisio.distancia_km.toFixed(1)} km`}
           </div>
         )}
+
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
+          {fisio.crefito && (
+            <span
+              className="flex items-center gap-1 text-xs"
+              style={{ color: "#8FAE8B" }}
+              title="Número de registro profissional informado no cadastro"
+            >
+              <ShieldCheck size={13} />
+              CREFITO informado{fisio.crefito_uf ? ` (${fisio.crefito_uf})` : ""}
+            </span>
+          )}
+          {fisio.total_avaliacoes > 0 && (
+            <span className="flex items-center gap-1 text-xs" style={{ color: "var(--muted1)" }}>
+              <Star size={13} fill="#E3A873" style={{ color: "#E3A873" }} />
+              {fisio.nota_media} ({fisio.total_avaliacoes}{" "}
+              {fisio.total_avaliacoes === 1 ? "avaliação" : "avaliações"})
+            </span>
+          )}
+        </div>
 
         {fisio.especialidades && fisio.especialidades.length > 0 && (
           <div className="flex gap-1 flex-wrap mt-3">
