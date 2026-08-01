@@ -76,6 +76,50 @@ export function PhysioForm({ onToast }) {
   const [form, setForm] = useState(PHYSIO_INITIAL);
   const [saving, setSaving] = useState(false);
   const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(true);
+  const [editando, setEditando] = useState(false);
+
+  // Se a conta já tem cadastro, abre o formulário preenchido em vez de em
+  // branco — assim dá pra editar o que já existe, não só criar do zero.
+  useEffect(() => {
+    let ativo = true;
+    meuPainelFisio()
+      .then((dados) => {
+        if (!ativo || !dados.fisio) return;
+        const f = dados.fisio;
+        setForm({
+          nome: f.nome || "",
+          whatsapp: f.whatsapp || "",
+          especialidades: f.especialidades || [],
+          cep: f.cep || "",
+          cidade: f.cidade || "",
+          bairros: f.bairros || [],
+          uf: f.uf || "",
+          lat: f.lat ?? null,
+          lng: f.lng ?? null,
+          raioKm: f.raio_km || 10,
+          disponibilidade: f.disponibilidade || "",
+          formacao: f.formacao || "",
+          resumo: f.resumo || "",
+          valorSessao: f.valor_sessao ?? "",
+          crefito: f.crefito || "",
+          crefinoUf: f.crefito_uf || "",
+          declaracaoCrefito: true,
+          declaracaoEtica: true,
+          declaracaoResponsabilidade: true,
+        });
+        setEditando(true);
+      })
+      .catch(() => {
+        // Sem cadastro ainda (ou erro ao buscar): segue com o formulário em branco.
+      })
+      .finally(() => {
+        if (ativo) setCarregando(false);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const setBairros = (arr) => setForm((f) => ({ ...f, bairros: arr }));
@@ -120,8 +164,9 @@ export function PhysioForm({ onToast }) {
     setErro("");
     try {
       await cadastrarFisio(form);
-      onToast?.("Cadastro enviado com sucesso!");
-      setForm(PHYSIO_INITIAL);
+      onToast?.(editando ? "Alterações salvas!" : "Cadastro enviado com sucesso!");
+      if (!editando) setForm(PHYSIO_INITIAL);
+      setEditando(true);
     } catch (e) {
       setErro(mensagemDeErro(e, "Não foi possível salvar seu cadastro agora."));
     } finally {
@@ -129,13 +174,30 @@ export function PhysioForm({ onToast }) {
     }
   };
 
+  if (carregando) {
+    return (
+      <div className="space-y-4">
+        <PrototypeWarning />
+        <Card>
+          <p className="text-sm" style={{ color: "var(--muted1)" }}>
+            Carregando seu cadastro...
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <PrototypeWarning />
       <Card>
-        <h2 className="text-lg font-medium mb-1">Cadastre-se como fisioterapeuta</h2>
+        <h2 className="text-lg font-medium mb-1">
+          {editando ? "Seu cadastro" : "Cadastre-se como fisioterapeuta"}
+        </h2>
         <p className="text-sm mb-5" style={{ color: "var(--muted1)" }}>
-          Receba pedidos de atendimento domiciliar na sua região.
+          {editando
+            ? "Altere o que quiser e salve — os pacientes já veem seus dados atualizados."
+            : "Receba pedidos de atendimento domiciliar na sua região."}
         </p>
         <form onSubmit={submit}>
           <Field label="Seu nome">
@@ -214,8 +276,8 @@ export function PhysioForm({ onToast }) {
             ))}
           </SelectInput>
           <p className="text-xs mt-1.5" style={{ color: "var(--muted2)" }}>
-            Só recebe pedidos dentro dessa distância. Dá pra mudar depois, cadastrando de novo com
-            o mesmo WhatsApp.
+            Só recebe pedidos dentro dessa distância. Dá pra mudar quando quiser, é só editar e
+            salvar de novo.
           </p>
         </Field>
         <Field label="Regiões que você atende (opcional — digite e aperte Enter)">
@@ -291,12 +353,8 @@ export function PhysioForm({ onToast }) {
 
         <ErroInline>{erro}</ErroInline>
         <PrimaryButton type="submit" loading={saving}>
-          Cadastrar <ArrowRight size={16} />
+          {editando ? "Salvar alterações" : "Cadastrar"} <ArrowRight size={16} />
         </PrimaryButton>
-        <p className="text-xs mt-4" style={{ color: "var(--muted3)" }}>
-          Se você já se cadastrou com este mesmo WhatsApp, enviar de novo atualiza seus dados em vez
-          de criar um cadastro duplicado.
-        </p>
       </form>
     </Card>
     </div>
