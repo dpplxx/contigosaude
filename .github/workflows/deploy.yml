@@ -32,9 +32,10 @@ jobs:
 
       - name: Build
         env:
-          # Domínio próprio (contigosaude.com.br) serve a partir da raiz, sem
-          # prefixo de caminho — daí VITE_BASE_PATH nem precisa ser definida
-          # (o default do vite.config.js já é "/").
+          # vite.config.js usa caminhos relativos no build, então o mesmo
+          # artefato funciona tanto no domínio próprio (raiz) quanto na URL
+          # antiga do GitHub Pages (subpasta /contigosaude/) — não precisa de
+          # VITE_BASE_PATH aqui.
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_PAINEL_PASSWORD: ${{ secrets.VITE_PAINEL_PASSWORD }}
