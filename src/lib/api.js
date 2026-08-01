@@ -66,8 +66,10 @@ export async function meusPedidos(whatsapp) {
   return data || [];
 }
 
-export async function painelFisio(whatsapp) {
-  const data = await rpc("hc_painel_fisio", { p_whatsapp: whatsapp });
+// O painel do fisio usa a conta logada, não mais um WhatsApp digitado —
+// veja migration-fisio-auth.sql.
+export async function meuPainelFisio() {
+  const data = await rpc("hc_meu_painel_fisio");
   return data || { fisio: null };
 }
 
@@ -81,11 +83,10 @@ export function enviarMensagem({ agendamentoId, whatsapp, remetente, remetenteNo
   });
 }
 
-export function marcarStatusAgendamento({ agendamentoId, status, whatsapp }) {
+export function marcarStatusAgendamento({ agendamentoId, status }) {
   return rpc("hc_marcar_status_agendamento", {
     p_agendamento_id: agendamentoId,
     p_status: status,
-    p_whatsapp: whatsapp,
   });
 }
 

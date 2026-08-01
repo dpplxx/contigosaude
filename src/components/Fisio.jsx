@@ -21,10 +21,10 @@ import {
   TextInput,
   Vazio,
 } from "./ui";
-import { CepInput, ChatThread, PhoneGate } from "./Compartilhados";
+import { CepInput, ChatThread } from "./Compartilhados";
 import { EthicalCheckbox, PrototypeWarning } from "./Ethics";
 import { formatarDistancia } from "../lib/geo";
-import { cadastrarFisio, marcarStatusAgendamento, painelFisio } from "../lib/api";
+import { cadastrarFisio, marcarStatusAgendamento, meuPainelFisio } from "../lib/api";
 import {
   ESPECIALIDADES_FISIO,
   STATUS_AGENDAMENTO,
@@ -304,8 +304,6 @@ export function PhysioForm({ onToast }) {
 }
 
 export function PhysioDashboard({ onNotify }) {
-  const [whatsapp, setWhatsapp] = useState("");
-  const [entered, setEntered] = useState(false);
   const [dados, setDados] = useState({ fisio: null });
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
@@ -313,27 +311,26 @@ export function PhysioDashboard({ onNotify }) {
   const compativeisAnteriores = useRef(new Set());
 
   const carregar = useCallback(async () => {
-    if (!whatsapp) return;
     setLoading(true);
     setErro("");
     try {
-      setDados(await painelFisio(whatsapp));
+      setDados(await meuPainelFisio());
     } catch (e) {
       setErro(mensagemDeErro(e, "Não foi possível carregar seus dados."));
     } finally {
       setLoading(false);
     }
-  }, [whatsapp]);
+  }, []);
 
   useEffect(() => {
-    if (entered) carregar();
-  }, [entered, carregar]);
+    carregar();
+  }, [carregar]);
 
   useEffect(() => {
-    if (!entered || !dados.fisio) return;
+    if (!dados.fisio) return;
     const intervalo = setInterval(carregar, 20000);
     return () => clearInterval(intervalo);
-  }, [entered, dados.fisio, carregar]);
+  }, [dados.fisio, carregar]);
 
   const compativeis = dados.pedidos_compativeis || [];
 
@@ -362,29 +359,11 @@ export function PhysioDashboard({ onNotify }) {
 
   const marcarStatus = async (agendamentoId, status) => {
     try {
-      await marcarStatusAgendamento({ agendamentoId, status, whatsapp });
+      await marcarStatusAgendamento({ agendamentoId, status });
       await carregar();
     } catch (e) {
       setErro(mensagemDeErro(e, "Não foi possível atualizar o agendamento."));
     }
-  };
-
-  if (!entered) {
-    return (
-      <PhoneGate
-        titulo="Meus agendamentos"
-        descricao="Digite o WhatsApp que você usou no cadastro pra entrar."
-        whatsapp={whatsapp}
-        setWhatsapp={setWhatsapp}
-        onSubmit={() => setEntered(true)}
-      />
-    );
-  }
-
-  const voltar = () => {
-    setEntered(false);
-    setDados({ fisio: null });
-    primeiraChecagem.current = true;
   };
 
   if (loading && !dados.fisio) {
@@ -402,12 +381,9 @@ export function PhysioDashboard({ onNotify }) {
       <Card>
         <ErroInline>{erro}</ErroInline>
         <p className="text-sm" style={{ color: "var(--muted1)" }}>
-          Não encontramos nenhum cadastro com esse WhatsApp. Confira se digitou certo ou cadastre-se
-          na aba "Cadastrar".
+          Esta conta ainda não tem um cadastro de fisioterapeuta. Preencha a aba "Cadastrar" para
+          começar a receber pedidos.
         </p>
-        <button onClick={voltar} className="text-sm underline mt-3" style={{ color: "#E3A873" }}>
-          Tentar outro número
-        </button>
       </Card>
     );
   }
@@ -427,18 +403,13 @@ export function PhysioDashboard({ onNotify }) {
           Olá, {fisio.nome} ·{" "}
           {agendamentos.length === 1 ? "1 agendamento" : `${agendamentos.length} agendamentos`}
         </p>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={carregar}
-            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border"
-            style={{ borderColor: "var(--border-soft)", color: "var(--muted4)" }}
-          >
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Atualizar
-          </button>
-          <button onClick={voltar} className="text-sm underline" style={{ color: "var(--muted1)" }}>
-            Trocar número
-          </button>
-        </div>
+        <button
+          onClick={carregar}
+          className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border"
+          style={{ borderColor: "var(--border-soft)", color: "var(--muted4)" }}
+        >
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Atualizar
+        </button>
       </div>
 
       <ErroInline>{erro}</ErroInline>
@@ -541,7 +512,7 @@ export function PhysioDashboard({ onNotify }) {
             </div>
             <ChatThread
               agendamentoId={a.id}
-              whatsapp={whatsapp}
+              whatsapp={fisio.whatsapp}
               remetente="fisio"
               remetenteNome={fisio.nome}
               mensagens={a.mensagens}

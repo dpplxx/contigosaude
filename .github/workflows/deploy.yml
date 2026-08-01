@@ -27,6 +27,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Test
+        run: npm test -- --run
+
       - name: Build
         env:
           # O site fica em https://<usuario>.github.io/<repo>/, então o Vite
