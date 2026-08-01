@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { MapPin, Phone, MessageCircle, Loader, ShieldCheck, Star } from "lucide-react";
 import { Card, Field, TextInput, SelectInput, PrimaryButton } from "./ui";
 import { CepInput, PhoneGate } from "./Compartilhados";
-import { ESPECIALIDADES_PACIENTE, mensagemDeErro, waLink } from "../lib/utils";
+import { ESPECIALIDADES_PACIENTE, URGENCIAS, mensagemDeErro, waLink } from "../lib/utils";
 import { supabase } from "../lib/supabase";
 import { criarPedido } from "../lib/api";
 import { normalizarTexto } from "../lib/normalizacao";
@@ -11,6 +11,7 @@ const BUSCA_INITIAL = {
   nome: "",
   whatsapp: "",
   especialidade: ESPECIALIDADES_PACIENTE[0],
+  urgencia: URGENCIAS[0],
   cep: "",
   cidade: "",
   bairro: "",
@@ -120,6 +121,16 @@ export function BuscaFisios() {
               {ESPECIALIDADES_PACIENTE.map((e) => (
                 <option key={e} value={e}>
                   {e}
+                </option>
+              ))}
+            </SelectInput>
+          </Field>
+
+          <Field label="Quando você precisa do atendimento?">
+            <SelectInput value={form.urgencia} onChange={set("urgencia")}>
+              {URGENCIAS.map((u) => (
+                <option key={u} value={u}>
+                  {u}
                 </option>
               ))}
             </SelectInput>
