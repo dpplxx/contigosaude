@@ -74,11 +74,15 @@ alter table public.fisios add column if not exists lat double precision;
 alter table public.fisios add column if not exists lng double precision;
 alter table public.fisios add column if not exists raio_km integer not null default 10;
 alter table public.fisios add column if not exists foto_url text;
+-- Fica aqui, cedo, porque hc_listar_fisios (definida mais abaixo) já lê essa
+-- coluna. Rodar o arquivo do zero falha se ela só existir depois da função.
+alter table public.fisios add column if not exists deletado_em timestamptz;
 
 alter table public.pedidos add column if not exists cep text;
 alter table public.pedidos add column if not exists uf text;
 alter table public.pedidos add column if not exists lat double precision;
 alter table public.pedidos add column if not exists lng double precision;
+alter table public.pedidos add column if not exists deletado_em timestamptz;
 
 create table if not exists public.agendamentos (
   id uuid primary key default gen_random_uuid(),
@@ -833,18 +837,32 @@ end $$;
 -- SEGURANÇA: AUDITORIA, SOFT DELETE, CRIPTOGRAFIA (GRÁTIS)
 -- ============================================================================
 
--- 1. SOFT DELETE: marcar como deletado, não remover dados
-alter table public.fisios add column if not exists deletado_em timestamptz;
-alter table public.pedidos add column if not exists deletado_em timestamptz;
+-- 1. SOFT DELETE: as colunas já foram criadas lá em cima (deletado_em), perto
+-- das outras ALTER TABLE — hc_listar_fisios já depende delas antes daqui.
 
--- RLS automático: nunca mostrar dados deletados
-create policy soft_delete_fisios on public.fisios for select
-  using (deletado_em IS NULL)
-  to authenticated;
+-- RLS automático: nunca mostrar dados deletados. "to" vem antes de "using":
+-- é a ordem exigida pelo Postgres em CREATE POLICY, trocada aqui por engano
+-- numa versão anterior.
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'fisios' and policyname = 'soft_delete_fisios'
+  ) then
+    create policy soft_delete_fisios on public.fisios for select
+      to authenticated
+      using (deletado_em IS NULL);
+  end if;
 
-create policy soft_delete_pedidos on public.pedidos for select
-  using (deletado_em IS NULL)
-  to authenticated;
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'pedidos' and policyname = 'soft_delete_pedidos'
+  ) then
+    create policy soft_delete_pedidos on public.pedidos for select
+      to authenticated
+      using (deletado_em IS NULL);
+  end if;
+end $$;
 
 -- 2. CRIPTOGRAFIA: CREFITO e observações sensíveis (pgcrypto)
 alter table public.fisios add column if not exists crefito text;
@@ -889,6 +907,17 @@ as $$
 $$;
 
 -- 4. FUNÇÃO PARA ENCRIPTAR DADOS SENSÍVEIS
+--
+-- ATENÇÃO: nenhum código do app chama estas duas funções hoje (nem grava em
+-- crefito_encrypted). Além disso elas quebram do jeito que estão: pgp_sym_encrypt
+-- vive no schema "extensions" no Supabase, e o search_path aqui é só
+-- "public, pg_temp" — dá "function does not exist" ao criar. Precisam de
+-- "set search_path = public, extensions, pg_temp" pra sequer compilar.
+-- Também vale notar que a chave de criptografia está fixa aqui no código,
+-- versionado no Git — isso não protege nada de verdade, já que qualquer
+-- pessoa com acesso ao repositório já tem a chave. Uma criptografia real
+-- precisaria da chave em um cofre de segredos (Vault do Supabase, por
+-- exemplo), não no SQL.
 create or replace function public.hc_encriptar_crefito(p_crefito text)
 returns text
 language sql
