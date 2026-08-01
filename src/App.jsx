@@ -16,8 +16,7 @@ import { Card, RoleButton, TabButton, ToastContainer } from "./components/ui";
 import { RequestForm, PatientTracking } from "./components/Paciente";
 import { PhysioForm, PhysioDashboard } from "./components/Fisio";
 import { VerificacaoCREFITO } from "./components/VerificacaoCREFITO";
-import { AuthPaciente } from "./components/AuthPaciente";
-import { MeusAgendamentos } from "./components/MeusAgendamentos";
+import { AuthEmail } from "./components/AuthEmail";
 import { Painel } from "./components/Painel";
 import { Login } from "./components/Login";
 import { ProtecaoPainel } from "./components/ProtecaoPainel";
@@ -132,7 +131,7 @@ export default function App() {
   const [tema, setTema] = useState("escuro");
   const [toasts, setToasts] = useState([]);
   const [sessao, setSessao] = useState(null);
-  const [sessaoPaciente, setSessaoPaciente] = useState(null);
+  const [souAdmin, setSouAdmin] = useState(false);
   const [dadosPainel, setDadosPainel] = useState(PAINEL_VAZIO);
   const [loadingPainel, setLoadingPainel] = useState(false);
   const [erroPainel, setErroPainel] = useState("");
@@ -182,6 +181,29 @@ export default function App() {
     sessaoAtual().then(setSessao);
     return aoMudarSessao(setSessao);
   }, []);
+
+  // Painel/Métricas só aparecem na navegação para quem é admin de verdade —
+  // qualquer paciente ou fisio autenticado também tem "sessao" preenchida
+  // (é a mesma sessão do Supabase Auth), então checar isso evita mostrar
+  // essas abas para quem não tem nada a ver com elas.
+  useEffect(() => {
+    if (!sessao) {
+      setSouAdmin(false);
+      return;
+    }
+    let ativo = true;
+    ehAdmin()
+      .then((v) => ativo && setSouAdmin(v))
+      .catch(() => ativo && setSouAdmin(false));
+    return () => {
+      ativo = false;
+    };
+  }, [sessao]);
+
+  // Sem sessão, a verificação de CREFITO da visita anterior não vale mais.
+  useEffect(() => {
+    if (!sessao) setCrefitoCertificado(false);
+  }, [sessao]);
 
   const recarregarPainel = useCallback(async () => {
     if (!sessao) return;
@@ -255,7 +277,7 @@ export default function App() {
         >
           <Stethoscope size={16} /> Sou fisioterapeuta
         </RoleButton>
-        {sessao && (
+        {souAdmin && (
           <>
             <RoleButton active={role === "painel"} onClick={() => setRole("painel")}>
               <ClipboardList size={16} /> Painel
@@ -267,11 +289,8 @@ export default function App() {
         )}
       </div>
 
-      {role === "paciente" && (
+      {role === "paciente" && sessao && (
         <nav className="max-w-3xl mx-auto px-4 sm:px-6 flex gap-2 pb-4">
-          <TabButton active={pacienteView === "login"} onClick={() => setPacienteView("login")}>
-            Minha conta
-          </TabButton>
           <TabButton active={pacienteView === "pedido"} onClick={() => setPacienteView("pedido")}>
             Pedir atendimento
           </TabButton>
@@ -284,7 +303,7 @@ export default function App() {
         </nav>
       )}
 
-      {role === "fisio" && crefitoCertificado && (
+      {role === "fisio" && sessao && crefitoCertificado && (
         <nav className="max-w-3xl mx-auto px-4 sm:px-6 flex gap-2 pb-4">
           <TabButton active={fisioView === "cadastro"} onClick={() => setFisioView("cadastro")}>
             Cadastrar
@@ -301,14 +320,20 @@ export default function App() {
       <main className="max-w-3xl mx-auto px-4 sm:px-6 pb-16 space-y-4">
         {!supabaseConfigurado && <AvisoSemChaves />}
 
-        {role === "paciente" && pacienteView === "login" && (
-          <AuthPaciente onAutenticado={setSessaoPaciente} />
+        {role === "paciente" && !sessao && (
+          <AuthEmail tipo="paciente" onAutenticado={() => addToast("Bem-vinda!")} />
         )}
-        {role === "paciente" && pacienteView === "pedido" && <RequestForm onToast={addToast} />}
-        {role === "paciente" && pacienteView === "acompanhar" && (
+        {role === "paciente" && sessao && pacienteView === "pedido" && (
+          <RequestForm onToast={addToast} />
+        )}
+        {role === "paciente" && sessao && pacienteView === "acompanhar" && (
           <PatientTracking onNotify={notificar} />
         )}
-        {role === "fisio" && !crefitoCertificado && (
+
+        {role === "fisio" && !sessao && (
+          <AuthEmail tipo="fisio" onAutenticado={() => addToast("Bem-vindo!")} />
+        )}
+        {role === "fisio" && sessao && !crefitoCertificado && (
           <VerificacaoCREFITO
             onVerificado={(crefito) => {
               setCrefitoCertificado(true);
@@ -316,10 +341,10 @@ export default function App() {
             }}
           />
         )}
-        {role === "fisio" && crefitoCertificado && fisioView === "cadastro" && (
+        {role === "fisio" && sessao && crefitoCertificado && fisioView === "cadastro" && (
           <PhysioForm onToast={addToast} />
         )}
-        {role === "fisio" && crefitoCertificado && fisioView === "agendamentos" && (
+        {role === "fisio" && sessao && crefitoCertificado && fisioView === "agendamentos" && (
           <PhysioDashboard onNotify={notificar} />
         )}
 
