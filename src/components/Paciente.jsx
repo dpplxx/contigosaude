@@ -20,7 +20,7 @@ import {
   TextArea,
   TextInput,
 } from "./ui";
-import { AgendamentoInfo, CepInput, ChatThread, PhoneGate } from "./Compartilhados";
+import { AgendamentoInfo, CepInput, ChatThread } from "./Compartilhados";
 import { EthicalCheckbox, PrototypeWarning } from "./Ethics";
 import { BuscaFisios } from "./BuscaFisios";
 import { formatarDistancia } from "../lib/geo";
@@ -89,7 +89,7 @@ function PedidoEnviado({ fisiosProximos, onNovoPedido }) {
         </p>
       )}
       <p className="text-sm mt-3" style={{ color: "var(--muted2)" }}>
-        Você pode acompanhar o andamento na aba "Acompanhar meu pedido", usando o mesmo WhatsApp.
+        Você pode acompanhar o andamento na aba "Acompanhar meu pedido".
       </p>
       <button
         onClick={onNovoPedido}
@@ -111,7 +111,7 @@ export function RequestForm({ onToast }) {
   );
 }
 
-function AvaliarFisio({ fisio, whatsapp, onDone }) {
+function AvaliarFisio({ fisio, onDone }) {
   const [nota, setNota] = useState(0);
   const [comentario, setComentario] = useState("");
   const [saving, setSaving] = useState(false);
@@ -123,7 +123,7 @@ function AvaliarFisio({ fisio, whatsapp, onDone }) {
     setSaving(true);
     setErro("");
     try {
-      await avaliar({ fisioId: fisio.id, nota, comentario, whatsapp });
+      await avaliar({ fisioId: fisio.id, nota, comentario });
       setNota(0);
       setComentario("");
       setOpen(false);
@@ -186,36 +186,32 @@ function AvaliarFisio({ fisio, whatsapp, onDone }) {
 }
 
 export function PatientTracking({ onNotify }) {
-  const [whatsapp, setWhatsapp] = useState("");
-  const [entered, setEntered] = useState(false);
   const [pedidos, setPedidos] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState("");
   const [favoritos, setFavoritos] = useState(lerFavoritos);
   const primeiraChecagem = useRef(true);
   const agendadosAnteriores = useRef(new Set());
 
   const carregar = useCallback(async () => {
-    if (!whatsapp) return;
     setLoading(true);
     setErro("");
     try {
-      const lista = await meusPedidos(whatsapp);
+      const lista = await meusPedidos();
       setPedidos(lista);
     } catch (e) {
       setErro(mensagemDeErro(e, "Não foi possível carregar seus pedidos."));
     } finally {
       setLoading(false);
     }
-  }, [whatsapp]);
+  }, []);
 
   useEffect(() => {
-    if (entered) carregar();
-  }, [entered, carregar]);
+    carregar();
+  }, [carregar]);
 
   // Avisa quando um pedido que estava só aguardando ganha um agendamento.
   useEffect(() => {
-    if (!entered) return;
     const idsAtuais = new Set(pedidos.filter((p) => p.agendamento).map((p) => p.id));
     if (primeiraChecagem.current) {
       primeiraChecagem.current = false;
@@ -231,14 +227,13 @@ export function PatientTracking({ onNotify }) {
       }
     });
     agendadosAnteriores.current = idsAtuais;
-  }, [pedidos, entered, onNotify]);
+  }, [pedidos, onNotify]);
 
   // Sem push de verdade, a aba aberta reconsulta de tempos em tempos.
   useEffect(() => {
-    if (!entered) return;
     const intervalo = setInterval(carregar, 20000);
     return () => clearInterval(intervalo);
-  }, [entered, carregar]);
+  }, [carregar]);
 
   const toggleFavorito = (fisio) => {
     const jaTem = favoritos.some((f) => f.id === fisio.id);
@@ -258,76 +253,60 @@ export function PatientTracking({ onNotify }) {
     gravarFavoritos(atual);
   };
 
-  if (!entered) {
+  if (loading && pedidos.length === 0) {
     return (
-      <div className="space-y-4">
-        {favoritos.length > 0 && (
-          <Card>
-            <p className="text-sm font-medium mb-3 flex items-center gap-1.5">
-              <Heart size={14} fill="#D9756E" style={{ color: "#D9756E" }} /> Seus
-              fisioterapeutas favoritos
-            </p>
-            <div className="space-y-2">
-              {favoritos.map((p) => (
-                <InnerRow key={p.id}>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{p.nome}</p>
-                    <p className="text-xs" style={{ color: "var(--muted2)" }}>
-                      {p.cidade} · {p.especialidades?.join(", ")}
-                    </p>
-                  </div>
-                  <a
-                    href={waLink(p.whatsapp, `Olá ${p.nome}, preciso de atendimento domiciliar!`)}
-                    onClick={() => registrarClique(p.id)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg"
-                    style={{ background: "#8FAE8B33", color: "#8FAE8B", border: "1px solid #8FAE8B55" }}
-                  >
-                    <Phone size={12} /> WhatsApp
-                  </a>
-                </InnerRow>
-              ))}
-            </div>
-          </Card>
-        )}
-        <PhoneGate
-          titulo="Acompanhar meu pedido"
-          descricao="Digite o WhatsApp que você usou no pedido para ver o andamento."
-          whatsapp={whatsapp}
-          setWhatsapp={setWhatsapp}
-          onSubmit={() => setEntered(true)}
-        />
-      </div>
+      <Card>
+        <p className="text-sm" style={{ color: "var(--muted1)" }}>
+          Carregando seus pedidos...
+        </p>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-4">
+      {favoritos.length > 0 && (
+        <Card>
+          <p className="text-sm font-medium mb-3 flex items-center gap-1.5">
+            <Heart size={14} fill="#D9756E" style={{ color: "#D9756E" }} /> Seus
+            fisioterapeutas favoritos
+          </p>
+          <div className="space-y-2">
+            {favoritos.map((p) => (
+              <InnerRow key={p.id}>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{p.nome}</p>
+                  <p className="text-xs" style={{ color: "var(--muted2)" }}>
+                    {p.cidade} · {p.especialidades?.join(", ")}
+                  </p>
+                </div>
+                <a
+                  href={waLink(p.whatsapp, `Olá ${p.nome}, preciso de atendimento domiciliar!`)}
+                  onClick={() => registrarClique(p.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg"
+                  style={{ background: "#8FAE8B33", color: "#8FAE8B", border: "1px solid #8FAE8B55" }}
+                >
+                  <Phone size={12} /> WhatsApp
+                </a>
+              </InnerRow>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-sm" style={{ color: "var(--muted1)" }}>
           {pedidos.length === 1 ? "1 pedido encontrado" : `${pedidos.length} pedidos encontrados`}
         </p>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={carregar}
-            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border"
-            style={{ borderColor: "var(--border-soft)", color: "var(--muted4)" }}
-          >
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Atualizar
-          </button>
-          <button
-            onClick={() => {
-              setEntered(false);
-              setPedidos([]);
-              primeiraChecagem.current = true;
-            }}
-            className="text-sm underline"
-            style={{ color: "var(--muted1)" }}
-          >
-            Trocar número
-          </button>
-        </div>
+        <button
+          onClick={carregar}
+          className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border"
+          style={{ borderColor: "var(--border-soft)", color: "var(--muted4)" }}
+        >
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Atualizar
+        </button>
       </div>
 
       <ErroInline>{erro}</ErroInline>
@@ -335,8 +314,7 @@ export function PatientTracking({ onNotify }) {
       {!loading && pedidos.length === 0 && !erro && (
         <Card>
           <p className="text-sm" style={{ color: "var(--muted1)" }}>
-            Não encontramos nenhum pedido com esse WhatsApp. Confira se digitou certo ou envie um
-            pedido na aba "Pedir atendimento".
+            Você ainda não fez nenhum pedido. Use a aba "Pedir atendimento" para começar.
           </p>
         </Card>
       )}
@@ -401,11 +379,10 @@ export function PatientTracking({ onNotify }) {
                   </a>
                 </div>
                 {agendamento.status === "concluido" && (
-                  <AvaliarFisio fisio={fisio} whatsapp={whatsapp} onDone={carregar} />
+                  <AvaliarFisio fisio={fisio} onDone={carregar} />
                 )}
                 <ChatThread
                   agendamentoId={agendamento.id}
-                  whatsapp={whatsapp}
                   remetente="paciente"
                   remetenteNome={r.nome}
                   mensagens={agendamento.mensagens}

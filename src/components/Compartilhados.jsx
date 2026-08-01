@@ -3,7 +3,6 @@ import {
   Calendar,
   Check,
   Loader2,
-  LogIn,
   MapPin,
   MessageCircle,
   Send,
@@ -12,13 +11,12 @@ import {
   Card,
   ErroInline,
   Field,
-  PhoneInput,
   StatusBadge,
   TextInput,
   inputBase,
 } from "./ui";
 import { enviarMensagem } from "../lib/api";
-import { formatDataHora, mensagemDeErro, telefoneCompleto } from "../lib/utils";
+import { formatDataHora, mensagemDeErro } from "../lib/utils";
 import { cepCompleto, consultarCep, formatarCep } from "../lib/geo";
 
 /**
@@ -98,35 +96,6 @@ export function CepInput({ valor, onChange, onResolvido, ajuda, label }) {
   );
 }
 
-export function PhoneGate({ titulo, descricao, whatsapp, setWhatsapp, onSubmit }) {
-  const valido = telefoneCompleto(whatsapp);
-  return (
-    <Card>
-      <h2 className="text-lg font-medium mb-1">{titulo}</h2>
-      <p className="text-sm mb-4" style={{ color: "var(--muted1)" }}>
-        {descricao}
-      </p>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (valido) onSubmit();
-        }}
-        className="flex gap-2"
-      >
-        <PhoneInput value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
-        <button
-          type="submit"
-          disabled={!valido}
-          className="shrink-0 flex items-center gap-1.5 rounded-lg px-4 font-medium text-sm disabled:opacity-50"
-          style={{ background: "#C6693D", color: "#14231F" }}
-        >
-          <LogIn size={16} /> Entrar
-        </button>
-      </form>
-    </Card>
-  );
-}
-
 export function AgendamentoInfo({ agendamento, otherPartyLabel, otherPartyName }) {
   return (
     <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -143,7 +112,6 @@ export function AgendamentoInfo({ agendamento, otherPartyLabel, otherPartyName }
 
 export function ChatThread({
   agendamentoId,
-  whatsapp,
   remetente,
   remetenteNome,
   mensagens,
@@ -165,7 +133,6 @@ export function ChatThread({
     try {
       await enviarMensagem({
         agendamentoId,
-        whatsapp,
         remetente,
         remetenteNome,
         texto: t,

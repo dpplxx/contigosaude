@@ -10,10 +10,19 @@
 -- Ninguém acessa as tabelas direto com a chave pública do site. O RLS está
 -- ligado e sem nenhuma política para visitante anônimo, então uma tentativa de
 -- ler a tabela de pedidos pelo navegador volta vazia. Todo acesso do público
--- passa pelas funções hc_* abaixo, que devolvem só o que a pessoa tem direito
--- de ver, identificada pelo próprio WhatsApp.
+-- passa pelas funções hc_* abaixo.
 --
 -- Você (logada no Painel) é o único papel com leitura ampla.
+--
+-- ESTE ARQUIVO É SÓ A BASE HISTÓRICA. Várias funções aqui (hc_criar_pedido,
+-- hc_cadastrar_fisio, hc_meus_pedidos, hc_enviar_mensagem, hc_avaliar) foram
+-- reescritas depois pelas migrações em ordem — confira migration-confianca,
+-- migration-fisio-auth, migration-paciente-auth, migration-editar-cadastro-
+-- fisio e migration-foto-fisio. Rodar só este arquivo (sem as migrações
+-- depois) deixa o banco num estado antigo, sem a checagem por conta logada
+-- que fecha um vazamento de dado real (confirmado ao vivo em 2026-08-01).
+-- Se este arquivo for rodado de novo por cima de um banco já migrado, rode
+-- todas as migrações de novo em seguida, na ordem dos nomes de arquivo.
 --
 -- COMO O MATCH FUNCIONA
 -- Paciente e fisioterapeuta informam o CEP. O app converte em coordenadas e
@@ -563,133 +572,16 @@ $$;
 
 -- ============================================================================
 -- LEITURA DO FISIOTERAPEUTA — o próprio cadastro, agenda e pedidos que casam
+--
+-- hc_painel_fisio(whatsapp) identificava o fisio só pelo WhatsApp digitado,
+-- sem checar login — qualquer um que soubesse o número via a agenda inteira
+-- de outro profissional. migration-fisio-auth.sql já derrubou essa função em
+-- produção e a substituiu por hc_meu_painel_fisio() (usa auth.uid()). O drop
+-- abaixo é só pra esse arquivo não recriar o problema se for rodado de novo
+-- por cima de um banco já migrado.
 -- ============================================================================
 
-create or replace function public.hc_painel_fisio(p_whatsapp text)
-returns jsonb
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
-declare
-  v_fisio fisios%rowtype;
-begin
-  if length(hc_chave(p_whatsapp)) <> 8 then
-    return jsonb_build_object('fisio', null);
-  end if;
-
-  select * into v_fisio from fisios where whatsapp_chave = hc_chave(p_whatsapp) limit 1;
-
-  if v_fisio.id is null then
-    return jsonb_build_object('fisio', null);
-  end if;
-
-  return jsonb_build_object(
-    'fisio', jsonb_build_object(
-      'id', v_fisio.id,
-      'nome', v_fisio.nome,
-      'cidade', v_fisio.cidade,
-      'bairros', v_fisio.bairros,
-      'especialidades', v_fisio.especialidades,
-      'valor_sessao', v_fisio.valor_sessao,
-      'contador_cliques', v_fisio.contador_cliques,
-      'raio_km', v_fisio.raio_km,
-      'tem_coordenadas', v_fisio.lat is not null
-    ),
-    'agendamentos', (
-      select coalesce(
-        jsonb_agg(
-          jsonb_build_object(
-            'id', a.id,
-            'data', a.data,
-            'horario', a.horario,
-            'status', a.status,
-            'pedido', jsonb_build_object(
-              'id', p.id,
-              'nome', p.nome,
-              -- O telefone do paciente só aparece depois de agendado, porque aí
-              -- o fisio precisa mesmo falar com ele para ir até a casa.
-              'whatsapp', p.whatsapp,
-              'cidade', p.cidade,
-              'bairro', p.bairro,
-              'especialidade', p.especialidade,
-              'observacoes', p.observacoes,
-              'distancia_km', round(
-                hc_distancia_km(v_fisio.lat, v_fisio.lng, p.lat, p.lng)::numeric, 1
-              )
-            ),
-            'mensagens', (
-              select coalesce(
-                jsonb_agg(
-                  jsonb_build_object(
-                    'id', m.id,
-                    'remetente', m.remetente,
-                    'remetente_nome', m.remetente_nome,
-                    'texto', m.texto,
-                    'criado_em', m.criado_em
-                  ) order by m.criado_em
-                ),
-                '[]'::jsonb
-              )
-              from mensagens m
-              where m.agendamento_id = a.id
-            )
-          ) order by a.data desc, a.horario desc
-        ),
-        '[]'::jsonb
-      )
-      from agendamentos a
-      join pedidos p on p.id = a.pedido_id
-      where a.fisio_id = v_fisio.id
-    ),
-    -- Pedidos ainda sem agendamento que batem com a região e especialidade.
-    -- Vai sem nome e sem telefone: é só o sinal de que há demanda, o contato
-    -- quem faz é você pelo Painel.
-    'pedidos_compativeis', (
-      select coalesce(
-        jsonb_agg(
-          jsonb_build_object(
-            'id', p.id,
-            'especialidade', p.especialidade,
-            'cidade', p.cidade,
-            'bairro', p.bairro,
-            'urgencia', p.urgencia,
-            'criado_em', p.criado_em,
-            'distancia_km', round(
-              hc_distancia_km(v_fisio.lat, v_fisio.lng, p.lat, p.lng)::numeric, 1
-            )
-          ) order by
-            hc_distancia_km(v_fisio.lat, v_fisio.lng, p.lat, p.lng) nulls last,
-            p.criado_em desc
-        ),
-        '[]'::jsonb
-      )
-      from pedidos p
-      where p.status = 'ativo'
-        and not exists (select 1 from agendamentos a where a.pedido_id = p.id)
-        and hc_compativel(
-          v_fisio.especialidades, v_fisio.cidade, v_fisio.bairros,
-          v_fisio.lat, v_fisio.lng, v_fisio.raio_km,
-          p.especialidade, p.cidade, p.bairro, p.lat, p.lng
-        )
-    ),
-    'avaliacoes', (
-      select coalesce(
-        jsonb_agg(
-          jsonb_build_object(
-            'id', av.id,
-            'nota', av.nota,
-            'comentario', av.comentario,
-            'criado_em', av.criado_em
-          ) order by av.criado_em desc
-        ),
-        '[]'::jsonb
-      )
-      from avaliacoes av
-      where av.fisio_id = v_fisio.id
-    )
-  );
-end $$;
+drop function if exists public.hc_painel_fisio(text);
 
 -- ============================================================================
 -- AÇÕES DAS DUAS PONTAS
@@ -740,32 +632,14 @@ begin
 end $$;
 
 -- O fisioterapeuta marca o próprio atendimento como concluído ou cancelado.
-create or replace function public.hc_marcar_status_agendamento(
-  p_agendamento_id uuid,
-  p_status text,
-  p_whatsapp text
-)
-returns void
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
-begin
-  if p_status not in ('agendado', 'concluido', 'cancelado') then
-    raise exception 'Status inválido.';
-  end if;
-
-  update agendamentos a
-  set status = p_status
-  from fisios f
-  where a.id = p_agendamento_id
-    and f.id = a.fisio_id
-    and f.whatsapp_chave = hc_chave(p_whatsapp);
-
-  if not found then
-    raise exception 'Sem permissão para alterar este agendamento.';
-  end if;
-end $$;
+--
+-- Esta versão (3 parâmetros, identifica o fisio pelo WhatsApp) foi
+-- substituída em produção por hc_marcar_status_agendamento(uuid,text), que
+-- usa auth.uid() — mesmo motivo do drop de hc_painel_fisio acima: WhatsApp
+-- não é segredo. O drop evita recriar a versão antiga se este arquivo for
+-- rodado de novo; migration-fisio-auth.sql (rodada depois) recria a versão
+-- segura.
+drop function if exists public.hc_marcar_status_agendamento(uuid, text, text);
 
 -- Só avalia quem teve um atendimento com aquele fisioterapeuta.
 create or replace function public.hc_avaliar(
@@ -817,13 +691,14 @@ do $$
 declare
   fn text;
 begin
+  -- hc_painel_fisio e a versão de 3 parâmetros de hc_marcar_status_agendamento
+  -- saíram desta lista: foram trocadas por "drop function" acima, então não
+  -- existem mais para conceder nada quando este arquivo roda do zero.
   foreach fn in array array[
     'hc_criar_pedido(text,text,text,text,text,text,text,text,text,double precision,double precision)',
     'hc_cadastrar_fisio(text,text,text[],text,text,text[],text,text,numeric,text,text,double precision,double precision,integer)',
     'hc_meus_pedidos(text)',
-    'hc_painel_fisio(text)',
     'hc_enviar_mensagem(uuid,text,text,text,text)',
-    'hc_marcar_status_agendamento(uuid,text,text)',
     'hc_avaliar(uuid,integer,text,text)',
     'hc_registrar_clique(uuid)'
   ]

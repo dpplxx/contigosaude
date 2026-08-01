@@ -641,7 +641,6 @@ export function PhysioDashboard({ onNotify }) {
             </div>
             <ChatThread
               agendamentoId={a.id}
-              whatsapp={fisio.whatsapp}
               remetente="fisio"
               remetenteNome={fisio.nome}
               mensagens={a.mensagens}

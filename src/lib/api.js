@@ -58,11 +58,12 @@ export function cadastrarFisio(form) {
 }
 
 // ---------------------------------------------------------------------------
-// Áreas identificadas pelo WhatsApp
+// Área do paciente — usa a conta logada, não mais o WhatsApp digitado.
+// Veja migration-paciente-auth.sql.
 // ---------------------------------------------------------------------------
 
-export async function meusPedidos(whatsapp) {
-  const data = await rpc("hc_meus_pedidos", { p_whatsapp: whatsapp });
+export async function meusPedidos() {
+  const data = await rpc("hc_meus_pedidos");
   return data || [];
 }
 
@@ -98,10 +99,9 @@ export async function enviarFotoFisio(arquivo) {
   return fotoUrl;
 }
 
-export function enviarMensagem({ agendamentoId, whatsapp, remetente, remetenteNome, texto }) {
+export function enviarMensagem({ agendamentoId, remetente, remetenteNome, texto }) {
   return rpc("hc_enviar_mensagem", {
     p_agendamento_id: agendamentoId,
-    p_whatsapp: whatsapp,
     p_remetente: remetente,
     p_remetente_nome: remetenteNome,
     p_texto: texto,
@@ -115,12 +115,11 @@ export function marcarStatusAgendamento({ agendamentoId, status }) {
   });
 }
 
-export function avaliar({ fisioId, nota, comentario, whatsapp }) {
+export function avaliar({ fisioId, nota, comentario }) {
   return rpc("hc_avaliar", {
     p_fisio_id: fisioId,
     p_nota: nota,
     p_comentario: comentario || null,
-    p_whatsapp: whatsapp,
   });
 }
 

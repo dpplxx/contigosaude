@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { MapPin, Phone, MessageCircle, Loader, ShieldCheck, Star } from "lucide-react";
 import { Card, Field, TextInput, SelectInput, PrimaryButton } from "./ui";
-import { CepInput, PhoneGate } from "./Compartilhados";
+import { CepInput } from "./Compartilhados";
 import { ESPECIALIDADES_PACIENTE, URGENCIAS, mensagemDeErro, waLink } from "../lib/utils";
 import { supabase } from "../lib/supabase";
 import { criarPedido } from "../lib/api";
