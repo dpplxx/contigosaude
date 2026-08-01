@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
+  Camera,
   Clock,
   MapPin,
   Phone,
   RefreshCw,
   Sparkles,
+  User,
 } from "lucide-react";
 import {
   Card,
@@ -24,7 +26,12 @@ import {
 import { CepInput, ChatThread } from "./Compartilhados";
 import { EthicalCheckbox, PrototypeWarning } from "./Ethics";
 import { formatarDistancia } from "../lib/geo";
-import { cadastrarFisio, marcarStatusAgendamento, meuPainelFisio } from "../lib/api";
+import {
+  cadastrarFisio,
+  enviarFotoFisio,
+  marcarStatusAgendamento,
+  meuPainelFisio,
+} from "../lib/api";
 import {
   ESPECIALIDADES_FISIO,
   STATUS_AGENDAMENTO,
@@ -65,6 +72,7 @@ const PHYSIO_INITIAL = {
   valorSessao: "",
   crefito: "",
   crefinoUf: "",
+  fotoUrl: "",
   declaracaoCrefito: false,
   declaracaoEtica: false,
   declaracaoResponsabilidade: false,
@@ -78,6 +86,8 @@ export function PhysioForm({ onToast }) {
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [editando, setEditando] = useState(false);
+  const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Se a conta já tem cadastro, abre o formulário preenchido em vez de em
   // branco — assim dá pra editar o que já existe, não só criar do zero.
@@ -104,6 +114,7 @@ export function PhysioForm({ onToast }) {
           valorSessao: f.valor_sessao ?? "",
           crefito: f.crefito || "",
           crefinoUf: f.crefito_uf || "",
+          fotoUrl: f.foto_url || "",
           declaracaoCrefito: true,
           declaracaoEtica: true,
           declaracaoResponsabilidade: true,
@@ -143,6 +154,30 @@ export function PhysioForm({ onToast }) {
         ? f.especialidades.filter((x) => x !== esp)
         : [...f.especialidades, esp],
     }));
+  };
+
+  // O upload acontece na hora que a pessoa escolhe o arquivo, sem precisar
+  // clicar em "Salvar alterações" do resto do formulário.
+  const escolherFoto = async (e) => {
+    const arquivo = e.target.files?.[0];
+    if (!arquivo) return;
+    if (arquivo.size > 2 * 1024 * 1024) {
+      setErro("A imagem precisa ter até 2MB.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    setEnviandoFoto(true);
+    setErro("");
+    try {
+      const url = await enviarFotoFisio(arquivo);
+      setForm((f) => ({ ...f, fotoUrl: url }));
+      onToast?.("Foto atualizada!");
+    } catch (e) {
+      setErro(mensagemDeErro(e, "Não foi possível enviar a foto."));
+    } finally {
+      setEnviandoFoto(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const submit = async (e) => {
@@ -199,6 +234,42 @@ export function PhysioForm({ onToast }) {
             ? "Altere o que quiser e salve — os pacientes já veem seus dados atualizados."
             : "Receba pedidos de atendimento domiciliar na sua região."}
         </p>
+
+        {editando && (
+          <div className="flex items-center gap-4 mb-5">
+            <div
+              className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
+              style={{ background: "var(--card)" }}
+            >
+              {form.fotoUrl ? (
+                <img src={form.fotoUrl} alt="Sua foto" className="w-full h-full object-cover" />
+              ) : (
+                <User size={28} style={{ color: "var(--muted)" }} />
+              )}
+            </div>
+            <div>
+              <label
+                className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border cursor-pointer"
+                style={{ borderColor: "var(--border-soft)", color: "var(--muted4)" }}
+              >
+                <Camera size={14} />
+                {enviandoFoto ? "Enviando..." : form.fotoUrl ? "Trocar foto" : "Adicionar foto"}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={escolherFoto}
+                  disabled={enviandoFoto}
+                  className="hidden"
+                />
+              </label>
+              <p className="text-xs mt-1.5" style={{ color: "var(--muted2)" }}>
+                Aparece para os pacientes na busca. JPG, PNG ou WEBP, até 2MB.
+              </p>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={submit}>
           <Field label="Seu nome">
             <TextInput value={form.nome} onChange={set("nome")} placeholder="Ex: João Pereira" required />

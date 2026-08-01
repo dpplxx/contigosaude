@@ -73,6 +73,31 @@ export async function meuPainelFisio() {
   return data || { fisio: null };
 }
 
+// Sobe a foto pro bucket público "fotos-fisios", numa pasta com o próprio
+// user_id (é o que a policy do storage exige), e salva a URL no cadastro.
+export async function enviarFotoFisio(arquivo) {
+  const db = cliente();
+  const { data: userData, error: userError } = await db.auth.getUser();
+  if (userError) throw userError;
+  const userId = userData?.user?.id;
+  if (!userId) throw new Error("Você precisa estar logado para enviar uma foto.");
+
+  const extensao = arquivo.name.split(".").pop()?.toLowerCase() || "jpg";
+  const caminho = `${userId}/foto.${extensao}`;
+
+  const { error: uploadError } = await db.storage
+    .from("fotos-fisios")
+    .upload(caminho, arquivo, { upsert: true, contentType: arquivo.type });
+  if (uploadError) throw uploadError;
+
+  const { data: urlData } = db.storage.from("fotos-fisios").getPublicUrl(caminho);
+  // Evita que o navegador mostre a foto antiga em cache depois de trocar.
+  const fotoUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+  await rpc("hc_atualizar_foto_fisio", { p_foto_url: fotoUrl });
+  return fotoUrl;
+}
+
 export function enviarMensagem({ agendamentoId, whatsapp, remetente, remetenteNome, texto }) {
   return rpc("hc_enviar_mensagem", {
     p_agendamento_id: agendamentoId,
