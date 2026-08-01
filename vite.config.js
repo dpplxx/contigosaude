@@ -9,8 +9,11 @@ import tailwindcss from "@tailwindcss/vite";
 // Separar as duas evita que quem só está conhecendo o serviço precise baixar
 // todo o bundle do app.
 //
-// Em produção no GitHub Pages: https://dpplxx.github.io/contigosaude/
-// O build precisa saber disso. Localmente (npm run dev) o base fica em "/" e tudo funciona normal.
+// Em produção: https://contigosaude.com.br (domínio próprio, servido pelo
+// GitHub Pages a partir da raiz). Localmente (npm run dev) o base também
+// fica em "/" e tudo funciona normal. Antes do domínio próprio o site ficava
+// em dpplxx.github.io/contigosaude/ e precisava desse prefixo — não precisa
+// mais.
 export default defineConfig({
   base: process.env.VITE_BASE_PATH || "/",
   plugins: [react(), tailwindcss()],

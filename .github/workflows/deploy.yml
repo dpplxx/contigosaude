@@ -32,9 +32,9 @@ jobs:
 
       - name: Build
         env:
-          # O site fica em https://<usuario>.github.io/<repo>/, então o Vite
-          # precisa gerar os caminhos com esse prefixo.
-          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          # Domínio próprio (contigosaude.com.br) serve a partir da raiz, sem
+          # prefixo de caminho — daí VITE_BASE_PATH nem precisa ser definida
+          # (o default do vite.config.js já é "/").
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_PAINEL_PASSWORD: ${{ secrets.VITE_PAINEL_PASSWORD }}
