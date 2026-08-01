@@ -20,7 +20,10 @@ export default defineConfig({
       input: {
         landing: resolve(import.meta.dirname, "index.html"),
         app: resolve(import.meta.dirname, "app.html"),
-        "seo-serra": resolve(import.meta.dirname, "fisioterapia-domiciliar/serra.html"),
+        "seo-espirito-santo": resolve(
+          import.meta.dirname,
+          "fisioterapia-domiciliar/espirito-santo.html"
+        ),
       },
       output: {
         entryFileNames: "assets/[name]-[hash].js",
