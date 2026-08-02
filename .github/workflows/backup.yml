@@ -25,13 +25,21 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Instalar cliente Postgres
-        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+      # O pg_dump do repositório padrão do Ubuntu é da série 16, mas o
+      # Supabase roda Postgres 17 — pg_dump recusa dump de um servidor mais
+      # novo que ele mesmo. O script oficial da PGDG (mantenedores do
+      # Postgres) adiciona o repositório certo pra instalar a versão 17.
+      - name: Instalar cliente Postgres 17
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install --yes postgresql-client-17
 
       - name: Dump do banco
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: pg_dump "$DATABASE_URL" --no-owner --no-privileges -F c -f backup.dump
+        run: /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" --no-owner --no-privileges -F c -f backup.dump
 
       - name: Criptografar
         env:
