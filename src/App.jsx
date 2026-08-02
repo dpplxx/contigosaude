@@ -15,7 +15,6 @@ import {
 import { Card, RoleButton, TabButton, ToastContainer } from "./components/ui";
 import { RequestForm, PatientTracking } from "./components/Paciente";
 import { PhysioForm, PhysioDashboard } from "./components/Fisio";
-import { VerificacaoCREFITO } from "./components/VerificacaoCREFITO";
 import { AuthEmail } from "./components/AuthEmail";
 import { Painel } from "./components/Painel";
 import { Login } from "./components/Login";
@@ -135,7 +134,6 @@ export default function App() {
   const [loadingPainel, setLoadingPainel] = useState(false);
   const [erroPainel, setErroPainel] = useState("");
   const [autorizada, setAutorizada] = useState(true);
-  const [crefitoCertificado, setCrefitoCertificado] = useState(false);
 
   const addToast = useCallback((msg, tipo = "ok") => {
     const id = uid();
@@ -196,11 +194,6 @@ export default function App() {
     };
   }, [sessao]);
 
-  // Sem sessão, a verificação de CREFITO da visita anterior não vale mais.
-  useEffect(() => {
-    if (!sessao) setCrefitoCertificado(false);
-  }, [sessao]);
-
   const recarregarPainel = useCallback(async () => {
     if (!sessao) return;
     setLoadingPainel(true);
@@ -253,22 +246,10 @@ export default function App() {
       />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 flex gap-2 pb-3 flex-wrap">
-        <RoleButton
-          active={role === "paciente"}
-          onClick={() => {
-            setRole("paciente");
-            setCrefitoCertificado(false);
-          }}
-        >
+        <RoleButton active={role === "paciente"} onClick={() => setRole("paciente")}>
           <Home size={16} /> Sou paciente
         </RoleButton>
-        <RoleButton
-          active={role === "fisio"}
-          onClick={() => {
-            setRole("fisio");
-            setCrefitoCertificado(false);
-          }}
-        >
+        <RoleButton active={role === "fisio"} onClick={() => setRole("fisio")}>
           <Stethoscope size={16} /> Sou fisioterapeuta
         </RoleButton>
         {souAdmin && (
@@ -297,7 +278,7 @@ export default function App() {
         </nav>
       )}
 
-      {role === "fisio" && sessao && crefitoCertificado && (
+      {role === "fisio" && sessao && (
         <nav className="max-w-3xl mx-auto px-4 sm:px-6 flex gap-2 pb-4">
           <TabButton active={fisioView === "cadastro"} onClick={() => setFisioView("cadastro")}>
             Cadastrar
@@ -327,18 +308,10 @@ export default function App() {
         {role === "fisio" && !sessao && (
           <AuthEmail tipo="fisio" onAutenticado={() => addToast("Bem-vindo!")} />
         )}
-        {role === "fisio" && sessao && !crefitoCertificado && (
-          <VerificacaoCREFITO
-            onVerificado={(crefito) => {
-              setCrefitoCertificado(true);
-              addToast("CREFITO verificado com sucesso!");
-            }}
-          />
-        )}
-        {role === "fisio" && sessao && crefitoCertificado && fisioView === "cadastro" && (
+        {role === "fisio" && sessao && fisioView === "cadastro" && (
           <PhysioForm onToast={addToast} />
         )}
-        {role === "fisio" && sessao && crefitoCertificado && fisioView === "agendamentos" && (
+        {role === "fisio" && sessao && fisioView === "agendamentos" && (
           <PhysioDashboard onNotify={notificar} />
         )}
 
