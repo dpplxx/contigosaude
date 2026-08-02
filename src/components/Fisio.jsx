@@ -44,6 +44,7 @@ import {
   tempoRelativo,
   waLink,
 } from "../lib/utils";
+import { TurnstileWidget, turnstileConfigurado } from "../lib/turnstile";
 import {
   CODIGO_ETICA_CREFITO,
   POLITICA_PRIVACIDADE,
@@ -89,6 +90,7 @@ export function PhysioForm({ onToast }) {
   const [carregando, setCarregando] = useState(true);
   const [editando, setEditando] = useState(false);
   const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
   const fileInputRef = useRef(null);
 
   // Se a conta já tem cadastro, abre o formulário preenchido em vez de em
@@ -195,6 +197,12 @@ export function PhysioForm({ onToast }) {
     }
     if (!form.declaracaoCrefito || !form.declaracaoEtica || !form.declaracaoResponsabilidade) {
       setErro("Você precisa aceitar todas as declarações éticas para se cadastrar.");
+      return;
+    }
+    // Só exige a verificação no cadastro novo — quem já está logado editando
+    // o próprio perfil não é o risco que o captcha existe pra filtrar.
+    if (!editando && turnstileConfigurado() && !turnstileToken) {
+      setErro("Confirme a verificação antes de continuar.");
       return;
     }
     setSaving(true);
@@ -424,8 +432,18 @@ export function PhysioForm({ onToast }) {
           />
         </div>
 
+        {!editando && (
+          <div className="mb-4">
+            <TurnstileWidget onToken={setTurnstileToken} />
+          </div>
+        )}
+
         <ErroInline>{erro}</ErroInline>
-        <PrimaryButton type="submit" loading={saving}>
+        <PrimaryButton
+          type="submit"
+          loading={saving}
+          disabled={!editando && turnstileConfigurado() && !turnstileToken}
+        >
           {editando ? "Salvar alterações" : "Cadastrar"} <ArrowRight size={16} />
         </PrimaryButton>
       </form>

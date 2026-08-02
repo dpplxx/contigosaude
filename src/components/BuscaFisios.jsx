@@ -6,6 +6,7 @@ import { ESPECIALIDADES_PACIENTE, URGENCIAS, mensagemDeErro, tempoRelativo, waLi
 import { supabase } from "../lib/supabase";
 import { criarPedido, avaliacoesFisio } from "../lib/api";
 import { normalizarTexto } from "../lib/normalizacao";
+import { TurnstileWidget, turnstileConfigurado } from "../lib/turnstile";
 
 const BUSCA_INITIAL = {
   nome: "",
@@ -45,6 +46,7 @@ export function BuscaFisios() {
   // (diferente de um filtro por tempo de preenchimento). Se algum dia isso
   // não bastar, dá pra reforçar no backend.
   const [site, setSite] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -68,6 +70,10 @@ export function BuscaFisios() {
     }
     if (!form.cidade || !form.bairro) {
       setErro("Informe a cidade e o bairro.");
+      return;
+    }
+    if (turnstileConfigurado() && !turnstileToken) {
+      setErro("Confirme a verificação antes de continuar.");
       return;
     }
 
@@ -190,9 +196,20 @@ export function BuscaFisios() {
             </Field>
           </div>
 
+          <TurnstileWidget onToken={setTurnstileToken} />
+
           {erro && <div style={{ color: "#D98C6E", fontSize: "0.875rem" }}>{erro}</div>}
 
-          <PrimaryButton type="submit" disabled={loading || !form.cidade || !form.bairro || !form.whatsapp}>
+          <PrimaryButton
+            type="submit"
+            disabled={
+              loading ||
+              !form.cidade ||
+              !form.bairro ||
+              !form.whatsapp ||
+              (turnstileConfigurado() && !turnstileToken)
+            }
+          >
             {loading ? (
               <>
                 <Loader size={16} className="animate-spin" /> Buscando...

@@ -12,6 +12,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@sentry/react": "^10.69.0",
     "@supabase/supabase-js": "^2.111.0",
     "lucide-react": "^1.27.0",
     "react": "^19.2.7",
