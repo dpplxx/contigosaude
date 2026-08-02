@@ -1,10 +1,10 @@
 import { useCallback, useState } from "react";
-import { MapPin, Phone, MessageCircle, Loader, ShieldCheck, Star } from "lucide-react";
-import { Card, Field, TextInput, SelectInput, PrimaryButton } from "./ui";
+import { MapPin, Phone, MessageCircle, Loader, ShieldCheck, Star, ChevronDown, ChevronUp } from "lucide-react";
+import { Card, Field, TextInput, SelectInput, PrimaryButton, StarRow } from "./ui";
 import { CepInput } from "./Compartilhados";
-import { ESPECIALIDADES_PACIENTE, URGENCIAS, mensagemDeErro, waLink } from "../lib/utils";
+import { ESPECIALIDADES_PACIENTE, URGENCIAS, mensagemDeErro, tempoRelativo, waLink } from "../lib/utils";
 import { supabase } from "../lib/supabase";
-import { criarPedido } from "../lib/api";
+import { criarPedido, avaliacoesFisio } from "../lib/api";
 import { normalizarTexto } from "../lib/normalizacao";
 
 const BUSCA_INITIAL = {
@@ -214,6 +214,73 @@ function ListaFisios({ fisios, onVoltar, whatsappPaciente }) {
   );
 }
 
+function AvaliacoesFisio({ fisioId }) {
+  const [aberto, setAberto] = useState(false);
+  const [carregando, setCarregando] = useState(false);
+  const [avaliacoes, setAvaliacoes] = useState(null);
+
+  const alternar = async () => {
+    if (aberto) {
+      setAberto(false);
+      return;
+    }
+    setAberto(true);
+    if (avaliacoes !== null) return;
+    setCarregando(true);
+    try {
+      const lista = await avaliacoesFisio(fisioId);
+      setAvaliacoes(lista);
+    } catch {
+      setAvaliacoes([]);
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  return (
+    <div className="mt-2">
+      <button
+        onClick={alternar}
+        className="flex items-center gap-1 text-xs underline"
+        style={{ color: "var(--muted1)" }}
+      >
+        {aberto ? "Ocultar avaliações" : "Ver avaliações"}
+        {aberto ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+      </button>
+      {aberto && (
+        <div className="mt-2 space-y-2">
+          {carregando && (
+            <p className="text-xs" style={{ color: "var(--muted2)" }}>
+              Carregando avaliações...
+            </p>
+          )}
+          {!carregando && avaliacoes?.length === 0 && (
+            <p className="text-xs" style={{ color: "var(--muted2)" }}>
+              Nenhum comentário ainda.
+            </p>
+          )}
+          {!carregando &&
+            avaliacoes?.map((a, i) => (
+              <div key={i} className="pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+                <div className="flex items-center justify-between gap-2">
+                  <StarRow value={a.nota} size={12} />
+                  <span className="text-xs" style={{ color: "var(--muted3)" }}>
+                    {tempoRelativo(a.criado_em)}
+                  </span>
+                </div>
+                {a.comentario && (
+                  <p className="text-xs mt-1" style={{ color: "var(--muted4)" }}>
+                    {a.comentario}
+                  </p>
+                )}
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CartaFisio({ fisio, whatsappPaciente }) {
   return (
     <div
@@ -273,6 +340,8 @@ function CartaFisio({ fisio, whatsappPaciente }) {
             </span>
           )}
         </div>
+
+        {fisio.total_avaliacoes > 0 && <AvaliacoesFisio fisioId={fisio.id} />}
 
         {fisio.especialidades && fisio.especialidades.length > 0 && (
           <div className="flex gap-1 flex-wrap mt-3">
