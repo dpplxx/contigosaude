@@ -37,8 +37,8 @@ export function EthicsModal({ isOpen, onClose, title, children }) {
 
         <button
           onClick={onClose}
-          className="w-full rounded-lg py-2 font-medium"
-          style={{ background: "#C6693D", color: "#14231F" }}
+          className="w-full rounded-full py-2 font-medium"
+          style={{ background: "#009E86", color: "#FFFFFF" }}
         >
           Li e entendi
         </button>
@@ -66,7 +66,7 @@ export function EthicalCheckbox({
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
           className="mt-1 shrink-0 w-4 h-4 rounded"
-          style={{ accentColor: "#C6693D" }}
+          style={{ accentColor: "#009E86" }}
         />
         <label htmlFor={id} className="text-sm" style={{ color: "var(--muted1)" }}>
           {label}{" "}
@@ -74,7 +74,7 @@ export function EthicalCheckbox({
             type="button"
             onClick={() => setModalOpen(true)}
             className="underline hover:opacity-75 transition-opacity"
-            style={{ color: "#E3A873" }}
+            style={{ color: "#16C4A8" }}
           >
             (ler documento)
           </button>

@@ -83,8 +83,8 @@ function MapaRelativo({ pedidos, fisios }) {
                     style={{
                       width: Math.min(10 + n.pacientes * 4, 28),
                       height: Math.min(10 + n.pacientes * 4, 28),
-                      background: "#D9756E88",
-                      border: "1px solid #D9756E",
+                      background: "#E2685C88",
+                      border: "1px solid #E2685C",
                     }}
                   />
                 )}
@@ -94,8 +94,8 @@ function MapaRelativo({ pedidos, fisios }) {
                     style={{
                       width: Math.min(10 + n.fisios * 4, 28),
                       height: Math.min(10 + n.fisios * 4, 28),
-                      background: "#8FAE8B88",
-                      border: "1px solid #8FAE8B",
+                      background: "#2FAE7288",
+                      border: "1px solid #2FAE72",
                     }}
                   />
                 )}
@@ -114,14 +114,14 @@ function MapaRelativo({ pedidos, fisios }) {
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block rounded-full"
-            style={{ width: 10, height: 10, background: "#D9756E" }}
+            style={{ width: 10, height: 10, background: "#E2685C" }}
           />
           Pacientes
         </span>
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block rounded-full"
-            style={{ width: 10, height: 10, background: "#8FAE8B" }}
+            style={{ width: 10, height: 10, background: "#2FAE72" }}
           />
           Fisioterapeutas
         </span>
@@ -223,7 +223,7 @@ export function Metricas({ dados }) {
                     color: "var(--text)",
                   }}
                 />
-                <Bar dataKey="total" fill="#C6693D" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="total" fill="#009E86" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

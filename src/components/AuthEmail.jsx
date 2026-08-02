@@ -81,7 +81,7 @@ export function AuthEmail({ tipo = 'paciente', onAutenticado }) {
       {registroFeito && (
         <p
           className="text-sm mb-4 px-3 py-2 rounded-lg"
-          style={{ background: 'rgba(143, 174, 139, 0.15)', color: '#8FAE8B' }}
+          style={{ background: '#2FAE7233', color: '#1F7A50' }}
         >
           Conta criada! Confira seu email para confirmar e depois entre com sua senha.
         </p>
@@ -111,7 +111,7 @@ export function AuthEmail({ tipo = 'paciente', onAutenticado }) {
         </Field>
 
         {erro && (
-          <div className="flex items-start gap-2 text-xs" style={{ color: '#D98C6E' }}>
+          <div className="flex items-start gap-2 text-xs" style={{ color: '#C24A3E' }}>
             <AlertCircle size={14} className="mt-0.5 shrink-0" />
             <span>{erro}</span>
           </div>

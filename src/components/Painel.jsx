@@ -119,8 +119,8 @@ function AgendarForm({ pedido, fisios, onCreated }) {
         <button
           onClick={submit}
           disabled={saving || !fisioId || !data || !horario}
-          className="text-sm px-3 py-1.5 rounded-lg disabled:opacity-50"
-          style={{ background: "#C6693D", color: "#14231F" }}
+          className="text-sm px-3 py-1.5 rounded-full disabled:opacity-50"
+          style={{ background: "#009E86", color: "#FFFFFF" }}
         >
           {saving ? "Salvando..." : "Confirmar agendamento"}
         </button>
@@ -177,7 +177,7 @@ function RatingWidget({ fisioId, onSubmitted }) {
       <div className="flex gap-1 mb-2">
         {[1, 2, 3, 4, 5].map((n) => (
           <button key={n} onClick={() => setNota(n)} aria-label={`${n} estrelas`}>
-            <Star size={20} fill={n <= nota ? "#E3A873" : "none"} style={{ color: "#E3A873" }} />
+            <Star size={20} fill={n <= nota ? "#16C4A8" : "none"} style={{ color: "#16C4A8" }} />
           </button>
         ))}
       </div>
@@ -193,8 +193,8 @@ function RatingWidget({ fisioId, onSubmitted }) {
         <button
           onClick={submit}
           disabled={nota === 0 || saving}
-          className="text-sm px-3 py-1.5 rounded-lg disabled:opacity-50"
-          style={{ background: "#C6693D", color: "#14231F" }}
+          className="text-sm px-3 py-1.5 rounded-full disabled:opacity-50"
+          style={{ background: "#009E86", color: "#FFFFFF" }}
         >
           {saving ? "Enviando..." : "Enviar avaliação"}
         </button>
@@ -212,8 +212,8 @@ function RatingWidget({ fisioId, onSubmitted }) {
 
 const CREFITO_STATUS_INFO = {
   pendente: { label: "Pendente de verificação", color: "var(--muted1)", Icon: ShieldQuestion },
-  verificado: { label: "Verificado", color: "#8FAE8B", Icon: ShieldCheck },
-  rejeitado: { label: "Rejeitado", color: "#D98C6E", Icon: ShieldAlert },
+  verificado: { label: "Verificado", color: "#2FAE72", Icon: ShieldCheck },
+  rejeitado: { label: "Rejeitado", color: "#C24A3E", Icon: ShieldAlert },
 };
 
 function VerificacaoCrefito({ fisio, onDone }) {
@@ -251,7 +251,7 @@ function VerificacaoCrefito({ fisio, onDone }) {
             onClick={() => marcar("verificado")}
             disabled={saving}
             className="text-xs underline disabled:opacity-50"
-            style={{ color: "#8FAE8B" }}
+            style={{ color: "#2FAE72" }}
           >
             Marcar como verificado
           </button>
@@ -261,7 +261,7 @@ function VerificacaoCrefito({ fisio, onDone }) {
             onClick={() => marcar("rejeitado")}
             disabled={saving}
             className="text-xs underline disabled:opacity-50"
-            style={{ color: "#D98C6E" }}
+            style={{ color: "#C24A3E" }}
           >
             Marcar como rejeitado
           </button>
@@ -326,7 +326,7 @@ function RequestCard({ r, fisios, agendamentos, area, onRefresh, onArchive }) {
               <button
                 onClick={() => setMostrarMatches((v) => !v)}
                 className="text-xs mt-2 underline flex items-center gap-1"
-                style={{ color: "#E3A873" }}
+                style={{ color: "#16C4A8" }}
               >
                 <Sparkles size={12} />
                 {mostrarMatches ? "Ocultar" : "Ver"} fisios compatíveis ({matches.length})
@@ -343,14 +343,14 @@ function RequestCard({ r, fisios, agendamentos, area, onRefresh, onArchive }) {
                         <p className="text-xs" style={{ color: "var(--muted2)" }}>
                           {m.cidade}
                           {m._distancia != null && (
-                            <span style={{ color: "#8FAE8B" }}>
+                            <span style={{ color: "#2FAE72" }}>
                               {" "}
                               · {formatarDistancia(m._distancia)} do paciente
                             </span>
                           )}
                         </p>
                         {m.valor_sessao != null && (
-                          <p className="text-xs font-medium" style={{ color: "#8FAE8B" }}>
+                          <p className="text-xs font-medium" style={{ color: "#2FAE72" }}>
                             {formatarMoeda(m.valor_sessao)} / sessão
                           </p>
                         )}
@@ -363,8 +363,8 @@ function RequestCard({ r, fisios, agendamentos, area, onRefresh, onArchive }) {
                         onClick={() => registrarClique(m.id)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="shrink-0 flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg"
-                        style={{ background: "#8FAE8B33", color: "#8FAE8B", border: "1px solid #8FAE8B55" }}
+                        className="shrink-0 flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full"
+                        style={{ background: "#2FAE7233", color: "#2FAE72", border: "1px solid #2FAE7255" }}
                       >
                         <Phone size={12} /> WhatsApp
                       </a>
@@ -384,7 +384,7 @@ function RequestCard({ r, fisios, agendamentos, area, onRefresh, onArchive }) {
                   }
                 }}
                 className="text-xs underline"
-                style={{ color: "#8FAE8B" }}
+                style={{ color: "#2FAE72" }}
               >
                 Já entrei em contato / Atendido
               </button>
@@ -410,8 +410,8 @@ function RequestCard({ r, fisios, agendamentos, area, onRefresh, onArchive }) {
           )}
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 flex items-center gap-1 text-sm px-3 py-1.5 rounded-lg"
-          style={{ background: "#8FAE8B33", color: "#8FAE8B", border: "1px solid #8FAE8B55" }}
+          className="shrink-0 flex items-center gap-1 text-sm px-3 py-1.5 rounded-full"
+          style={{ background: "#2FAE7233", color: "#2FAE72", border: "1px solid #2FAE7255" }}
         >
           <Phone size={14} /> WhatsApp
         </a>
@@ -691,7 +691,7 @@ export function Painel({ dados, loading, erro, onRefresh }) {
                       </p>
                     )}
                     {p.valor_sessao != null && (
-                      <p className="text-sm mt-1 font-medium" style={{ color: "#8FAE8B" }}>
+                      <p className="text-sm mt-1 font-medium" style={{ color: "#2FAE72" }}>
                         {formatarMoeda(p.valor_sessao)} / sessão
                       </p>
                     )}
@@ -703,8 +703,8 @@ export function Painel({ dados, loading, erro, onRefresh }) {
                     onClick={() => registrarClique(p.id)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="shrink-0 flex items-center gap-1 text-sm px-3 py-1.5 rounded-lg"
-                    style={{ background: "#8FAE8B33", color: "#8FAE8B", border: "1px solid #8FAE8B55" }}
+                    className="shrink-0 flex items-center gap-1 text-sm px-3 py-1.5 rounded-full"
+                    style={{ background: "#2FAE7233", color: "#2FAE72", border: "1px solid #2FAE7255" }}
                   >
                     <Phone size={14} /> WhatsApp
                   </a>

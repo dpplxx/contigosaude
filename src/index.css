@@ -1,29 +1,35 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #1c2a28;
-  --text: #f2ede4;
-  --card: #24352f;
-  --card-inner: #14231f;
-  --border: #33443e;
-  --border-soft: #3a4a44;
+  --bg: #faf6ef;
+  --text: #10201b;
+  --card: #ffffff;
+  --card-inner: #f2ede1;
+  --border: #e8e1d3;
+  --border-soft: #efe9dc;
+  --muted1: #5b6b63;
+  --muted2: #667a70;
+  --muted3: #8a938e;
+  --muted4: #16211d;
+  --accent: #009e86;
+  --accent-dark: #007f6c;
+  --accent-soft: rgba(0, 158, 134, 0.1);
+}
+
+.theme-dark {
+  --bg: #10201b;
+  --text: #f2ede1;
+  --card: #1a2c25;
+  --card-inner: #0d1815;
+  --border: #2b3d35;
+  --border-soft: #33473e;
   --muted1: #a9b8b2;
   --muted2: #8b9b94;
   --muted3: #6e7d77;
   --muted4: #c6d4ce;
-}
-
-.theme-light {
-  --bg: #f2ede4;
-  --text: #1c2a28;
-  --card: #ffffff;
-  --card-inner: #f7f3ec;
-  --border: #d9cfbe;
-  --border-soft: #e1d8c8;
-  --muted1: #5b6560;
-  --muted2: #6b7671;
-  --muted3: #8a938e;
-  --muted4: #3f4a44;
+  --accent: #16c4a8;
+  --accent-dark: #009e86;
+  --accent-soft: rgba(22, 196, 168, 0.14);
 }
 
 body {
@@ -53,18 +59,18 @@ body {
 }
 
 .ficha-input {
-  background: #f2ede4;
-  color: #14231f;
-  border-color: #3a4a44;
+  background: #f2ede1;
+  color: #10201b;
+  border-color: #d8d0bd;
   color-scheme: light;
 }
 
 .ficha-input::placeholder {
-  color: #7a8580;
+  color: #8a938e;
 }
 
 .ficha-input:focus {
-  border-color: #c6693d;
+  border-color: #009e86;
 }
 
 @keyframes toast-in {

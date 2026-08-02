@@ -76,7 +76,7 @@ export function CepInput({ valor, onChange, onResolvido, ajuda, label }) {
         </span>
       </div>
       {status === "ok" && (
-        <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: "#8FAE8B" }}>
+        <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: "#2FAE72" }}>
           <MapPin size={12} /> Endereço localizado.{" "}
           {ajuda || "Usamos isso só para calcular a distância — o endereço exato não aparece publicamente."}
         </p>
@@ -88,7 +88,7 @@ export function CepInput({ valor, onChange, onResolvido, ajuda, label }) {
         </p>
       )}
       {status === "erro" && (
-        <p className="text-xs mt-1.5" style={{ color: "#D98C6E" }}>
+        <p className="text-xs mt-1.5" style={{ color: "#C24A3E" }}>
           {erro}
         </p>
       )}
@@ -168,7 +168,7 @@ export function ChatThread({
                 className="max-w-[80%] rounded-xl px-3 py-1.5 text-sm"
                 style={
                   minha
-                    ? { background: "#C6693D", color: "#14231F" }
+                    ? { background: "#009E86", color: "#FFFFFF" }
                     : {
                         background: "var(--card-inner)",
                         color: "var(--text)",
@@ -200,8 +200,8 @@ export function ChatThread({
         <button
           onClick={send}
           disabled={sending || !texto.trim()}
-          className="shrink-0 flex items-center justify-center rounded-lg px-3.5 disabled:opacity-50"
-          style={{ background: "#C6693D", color: "#14231F" }}
+          className="shrink-0 flex items-center justify-center rounded-full px-3.5 disabled:opacity-50"
+          style={{ background: "#009E86", color: "#FFFFFF" }}
           aria-label="Enviar mensagem"
         >
           {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}

@@ -70,7 +70,7 @@ export function TurnstileWidget({ onToken }) {
     <div>
       <div id={id} ref={containerRef} />
       {erro && (
-        <p className="text-xs mt-1" style={{ color: "#D98C6E" }}>
+        <p className="text-xs mt-1" style={{ color: "#C24A3E" }}>
           {erro}
         </p>
       )}

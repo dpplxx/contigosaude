@@ -68,7 +68,7 @@ export function TagInput({ value, onChange, placeholder }) {
             <span
               key={t}
               className="flex items-center gap-1.5 text-sm px-2.5 py-1 rounded-full"
-              style={{ background: "#C6693D22", color: "#E3A873", border: "1px solid #C6693D55" }}
+              style={{ background: "#009E8622", color: "#007F6C", border: "1px solid #009E8655" }}
             >
               {t}
               <button
@@ -105,8 +105,8 @@ export function PrimaryButton({ children, loading, ...props }) {
     <button
       {...props}
       disabled={loading || props.disabled}
-      className="w-full flex items-center justify-center gap-2 rounded-lg py-3 font-medium text-[15px] transition-transform active:scale-[0.99] disabled:opacity-60"
-      style={{ background: "#C6693D", color: "#14231F" }}
+      className="w-full flex items-center justify-center gap-2 rounded-full py-3 font-semibold text-[15px] transition-transform active:scale-[0.99] disabled:opacity-60"
+      style={{ background: "#009E86", color: "#FFFFFF" }}
     >
       {loading ? <Loader2 size={18} className="animate-spin" /> : null}
       {children}
@@ -151,9 +151,9 @@ export function NovoBadge() {
   return (
     <span
       className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-      style={{ background: "#E3A873", color: "#14231F" }}
+      style={{ background: "#16C4A8", color: "#003B32" }}
     >
-      <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#14231F" }} />
+      <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#003B32" }} />
       Novo
     </span>
   );
@@ -161,9 +161,9 @@ export function NovoBadge() {
 
 export function StatusBadge({ status }) {
   const colors = {
-    agendado: { bg: "#E3A87333", fg: "#E3A873", bd: "#E3A87355" },
-    concluido: { bg: "#8FAE8B33", fg: "#8FAE8B", bd: "#8FAE8B55" },
-    cancelado: { bg: "#C6693D22", fg: "#D98C6E", bd: "#C6693D55" },
+    agendado: { bg: "#16C4A833", fg: "#0F7A67", bd: "#16C4A855" },
+    concluido: { bg: "#2FAE7233", fg: "#1F7A50", bd: "#2FAE7255" },
+    cancelado: { bg: "#E2685C22", fg: "#C24A3E", bd: "#E2685C55" },
   };
   const c = colors[status] || colors.agendado;
   return (
@@ -183,8 +183,8 @@ export function StarRow({ value, size = 14 }) {
         <Star
           key={n}
           size={size}
-          fill={n <= Math.round(value) ? "#E3A873" : "none"}
-          style={{ color: "#E3A873" }}
+          fill={n <= Math.round(value) ? "#16C4A8" : "none"}
+          style={{ color: "#16C4A8" }}
         />
       ))}
     </div>
@@ -194,7 +194,7 @@ export function StarRow({ value, size = 14 }) {
 export function ErroInline({ children }) {
   if (!children) return null;
   return (
-    <p className="text-sm mb-3 flex items-start gap-1.5" style={{ color: "#D98C6E" }}>
+    <p className="text-sm mb-3 flex items-start gap-1.5" style={{ color: "#C24A3E" }}>
       <AlertCircle size={15} className="shrink-0 mt-0.5" />
       <span>{children}</span>
     </p>
@@ -213,10 +213,10 @@ export function TabButton({ active, onClick, children }) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors"
+      className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold transition-colors"
       style={
         active
-          ? { background: "#C6693D", color: "#14231F" }
+          ? { background: "#009E86", color: "#FFFFFF" }
           : { background: "transparent", color: "var(--muted1)", border: "1px solid var(--border)" }
       }
     >
@@ -229,10 +229,10 @@ export function RoleButton({ active, onClick, children }) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+      className="flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-semibold transition-colors"
       style={
         active
-          ? { background: "#E3A873", color: "#14231F" }
+          ? { background: "#009E86", color: "#FFFFFF" }
           : { background: "var(--card)", color: "var(--muted1)", border: "1px solid var(--border)" }
       }
     >
@@ -250,8 +250,8 @@ export function ToastContainer({ toasts }) {
           className="toast-item flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium shadow-lg"
           style={
             t.tipo === "erro"
-              ? { background: "#D98C6E", color: "#14231F" }
-              : { background: "#C6693D", color: "#14231F" }
+              ? { background: "#E2685C", color: "#FFFFFF" }
+              : { background: "#009E86", color: "#FFFFFF" }
           }
         >
           {t.tipo === "erro" ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}

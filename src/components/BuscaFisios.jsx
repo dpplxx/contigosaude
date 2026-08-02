@@ -198,7 +198,7 @@ export function BuscaFisios() {
 
           <TurnstileWidget onToken={setTurnstileToken} />
 
-          {erro && <div style={{ color: "#D98C6E", fontSize: "0.875rem" }}>{erro}</div>}
+          {erro && <div style={{ color: "#C24A3E", fontSize: "0.875rem" }}>{erro}</div>}
 
           <PrimaryButton
             type="submit"
@@ -232,7 +232,7 @@ function ListaFisios({ fisios, onVoltar, whatsappPaciente }) {
           <h2 className="text-lg font-medium">
             {fisios.length} profissional{fisios.length !== 1 ? "is" : ""} encontrado{fisios.length !== 1 ? "s" : ""}
           </h2>
-          <button onClick={onVoltar} className="text-sm underline" style={{ color: "#E3A873" }}>
+          <button onClick={onVoltar} className="text-sm underline" style={{ color: "#16C4A8" }}>
             Nova busca
           </button>
         </div>
@@ -364,7 +364,7 @@ function CartaFisio({ fisio, whatsappPaciente }) {
           {fisio.crefito && fisio.crefito_status === "verificado" && (
             <span
               className="flex items-center gap-1 text-xs"
-              style={{ color: "#8FAE8B" }}
+              style={{ color: "#2FAE72" }}
               title="Registro profissional conferido pela nossa equipe"
             >
               <ShieldCheck size={13} />
@@ -383,7 +383,7 @@ function CartaFisio({ fisio, whatsappPaciente }) {
           )}
           {fisio.total_avaliacoes > 0 && (
             <span className="flex items-center gap-1 text-xs" style={{ color: "var(--muted1)" }}>
-              <Star size={13} fill="#E3A873" style={{ color: "#E3A873" }} />
+              <Star size={13} fill="#16C4A8" style={{ color: "#16C4A8" }} />
               {fisio.nota_media} ({fisio.total_avaliacoes}{" "}
               {fisio.total_avaliacoes === 1 ? "avaliação" : "avaliações"})
             </span>
@@ -397,8 +397,8 @@ function CartaFisio({ fisio, whatsappPaciente }) {
             {fisio.especialidades.slice(0, 2).map((esp) => (
               <span
                 key={esp}
-                className="text-xs px-2 py-1 rounded"
-                style={{ background: "rgba(199, 105, 61, 0.15)", color: "#E3A873" }}
+                className="text-xs px-2 py-1 rounded-full"
+                style={{ background: "#009E8622", color: "#007F6C" }}
               >
                 {esp}
               </span>

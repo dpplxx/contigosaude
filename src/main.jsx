@@ -41,11 +41,11 @@ function TelaDeErro() {
         <button
           onClick={() => window.location.reload()}
           style={{
-            background: "#C6693D",
-            color: "#14231F",
+            background: "#009E86",
+            color: "#FFFFFF",
             border: "none",
             padding: "0.6rem 1.2rem",
-            borderRadius: "0.5rem",
+            borderRadius: "999px",
             cursor: "pointer",
           }}
         >

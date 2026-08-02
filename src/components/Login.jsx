@@ -31,7 +31,7 @@ export function Login({ onEntrou }) {
   return (
     <Card>
       <div className="flex items-center gap-2 mb-1">
-        <Lock size={18} style={{ color: "#E3A873" }} />
+        <Lock size={18} style={{ color: "#16C4A8" }} />
         <h2 className="text-lg font-medium">Área restrita</h2>
       </div>
       <p className="text-sm mb-5" style={{ color: "var(--muted1)" }}>

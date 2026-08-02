@@ -321,7 +321,7 @@ export function PhysioForm({ onToast }) {
                   className="text-sm px-3 py-1.5 rounded-full border transition-colors"
                   style={
                     active
-                      ? { background: "#C6693D", borderColor: "#C6693D", color: "#14231F" }
+                      ? { background: "#009E86", borderColor: "#009E86", color: "#FFFFFF" }
                       : {
                           background: "transparent",
                           borderColor: "var(--border-soft)",
@@ -400,7 +400,7 @@ export function PhysioForm({ onToast }) {
         </Field>
 
         <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
-          <p className="text-sm font-medium mb-3" style={{ color: "#E3A873" }}>
+          <p className="text-sm font-medium mb-3" style={{ color: "#16C4A8" }}>
             ⚖️ Declarações Éticas e Legais (obrigatórias)
           </p>
 
@@ -480,9 +480,9 @@ function PedidoCompativelCard({ pedido, onFechado }) {
     return (
       <div
         className="rounded-lg p-3"
-        style={{ background: "#8FAE8B1F", border: "1px solid #8FAE8B55" }}
+        style={{ background: "#2FAE721F", border: "1px solid #2FAE7255" }}
       >
-        <p className="text-sm font-medium" style={{ color: "#8FAE8B" }}>
+        <p className="text-sm font-medium" style={{ color: "#2FAE72" }}>
           Fechado! Combine os detalhes com {resultado.paciente_nome}:
         </p>
         <a
@@ -518,8 +518,8 @@ function PedidoCompativelCard({ pedido, onFechado }) {
           <button
             type="button"
             onClick={() => setAberto(true)}
-            className="text-xs px-3 py-1.5 rounded-lg shrink-0"
-            style={{ background: "#C6693D", color: "#14231F" }}
+            className="text-xs px-3 py-1.5 rounded-full shrink-0"
+            style={{ background: "#009E86", color: "#FFFFFF" }}
           >
             Fechei esse atendimento
           </button>
@@ -555,8 +555,8 @@ function PedidoCompativelCard({ pedido, onFechado }) {
           <button
             type="submit"
             disabled={enviando}
-            className="text-xs px-3 py-2.5 rounded-lg disabled:opacity-50"
-            style={{ background: "#C6693D", color: "#14231F" }}
+            className="text-xs px-3 py-2.5 rounded-full disabled:opacity-50"
+            style={{ background: "#009E86", color: "#FFFFFF" }}
           >
             {enviando ? "Confirmando..." : "Confirmar"}
           </button>
@@ -687,12 +687,12 @@ export function PhysioDashboard({ onNotify }) {
       <ErroInline>{erro}</ErroInline>
 
       {fisio.crefito_status === "verificado" && (
-        <p className="text-sm flex items-center gap-1.5" style={{ color: "#8FAE8B" }}>
+        <p className="text-sm flex items-center gap-1.5" style={{ color: "#2FAE72" }}>
           <ShieldCheck size={15} /> Seu CREFITO foi verificado pela nossa equipe.
         </p>
       )}
       {fisio.crefito_status === "rejeitado" && (
-        <p className="text-sm flex items-center gap-1.5" style={{ color: "#D98C6E" }}>
+        <p className="text-sm flex items-center gap-1.5" style={{ color: "#C24A3E" }}>
           <ShieldAlert size={15} /> Não conseguimos confirmar seu CREFITO. Confira o número
           cadastrado ou fale com a gente.
         </p>
@@ -700,7 +700,7 @@ export function PhysioDashboard({ onNotify }) {
 
       {!fisio.tem_coordenadas && (
         <Card>
-          <p className="text-sm" style={{ color: "#E3A873" }}>
+          <p className="text-sm" style={{ color: "#16C4A8" }}>
             Seu cadastro está sem CEP, então o match usa só cidade e bairro. Cadastre-se de novo com
             o mesmo WhatsApp informando o CEP — aí você passa a receber pedidos por distância real,
             dentro do seu raio de {fisio.raio_km} km.
@@ -710,7 +710,7 @@ export function PhysioDashboard({ onNotify }) {
 
       {compativeis.length > 0 && (
         <Card>
-          <p className="text-sm font-medium flex items-center gap-1.5 mb-3" style={{ color: "#E3A873" }}>
+          <p className="text-sm font-medium flex items-center gap-1.5 mb-3" style={{ color: "#16C4A8" }}>
             <Sparkles size={14} />
             {compativeis.length === 1
               ? "1 pedido compatível com você aguardando"
@@ -748,7 +748,7 @@ export function PhysioDashboard({ onNotify }) {
                   <p className="text-sm flex items-center gap-1 mt-1" style={{ color: "var(--muted1)" }}>
                     <MapPin size={13} /> {pedido.bairro}, {pedido.cidade}
                     {pedido.distancia_km != null && (
-                      <span style={{ color: "#8FAE8B" }}>
+                      <span style={{ color: "#2FAE72" }}>
                         · {formatarDistancia(pedido.distancia_km)} de você
                       </span>
                     )}
@@ -771,8 +771,8 @@ export function PhysioDashboard({ onNotify }) {
                       )}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg"
-                      style={{ background: "#8FAE8B33", color: "#8FAE8B", border: "1px solid #8FAE8B55" }}
+                      className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full"
+                      style={{ background: "#2FAE7233", color: "#2FAE72", border: "1px solid #2FAE7255" }}
                     >
                       <Phone size={12} /> WhatsApp
                     </a>

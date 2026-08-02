@@ -58,7 +58,7 @@ function AvaliarFisio({ fisio, onDone }) {
       <div className="flex gap-1 mb-2">
         {[1, 2, 3, 4, 5].map((n) => (
           <button key={n} onClick={() => setNota(n)} aria-label={`${n} estrelas`}>
-            <Star size={20} fill={n <= nota ? "#E3A873" : "none"} style={{ color: "#E3A873" }} />
+            <Star size={20} fill={n <= nota ? "#16C4A8" : "none"} style={{ color: "#16C4A8" }} />
           </button>
         ))}
       </div>
@@ -74,8 +74,8 @@ function AvaliarFisio({ fisio, onDone }) {
         <button
           onClick={submit}
           disabled={nota === 0 || saving}
-          className="text-sm px-3 py-1.5 rounded-lg disabled:opacity-50"
-          style={{ background: "#C6693D", color: "#14231F" }}
+          className="text-sm px-3 py-1.5 rounded-full disabled:opacity-50"
+          style={{ background: "#009E86", color: "#FFFFFF" }}
         >
           {saving ? "Enviando..." : "Enviar avaliação"}
         </button>
@@ -188,7 +188,7 @@ export function PatientTracking({ onNotify }) {
               <MapPin size={13} /> {r.bairro}, {r.cidade}
             </p>
             {!agendamento && (
-              <p className="text-sm mt-2" style={{ color: "#E3A873" }}>
+              <p className="text-sm mt-2" style={{ color: "#16C4A8" }}>
                 Ainda buscando um fisioterapeuta pra você.
               </p>
             )}
@@ -202,7 +202,7 @@ export function PatientTracking({ onNotify }) {
                 {fisio.distancia_km != null && (
                   <p
                     className="text-sm mt-1.5 flex items-center gap-1"
-                    style={{ color: "#8FAE8B" }}
+                    style={{ color: "#2FAE72" }}
                   >
                     <MapPin size={13} />
                     {fisio.nome} atende a {formatarDistancia(fisio.distancia_km)} de você
@@ -219,8 +219,8 @@ export function PatientTracking({ onNotify }) {
                     onClick={() => registrarClique(fisio.id)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg"
-                    style={{ background: "#8FAE8B33", color: "#8FAE8B", border: "1px solid #8FAE8B55" }}
+                    className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full"
+                    style={{ background: "#2FAE7233", color: "#2FAE72", border: "1px solid #2FAE7255" }}
                   >
                     <Phone size={12} /> WhatsApp
                   </a>

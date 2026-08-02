@@ -57,15 +57,15 @@ function Header({ tema, onToggleTema, onAtivarNotificacoes, sessao, onSair }) {
     <header className="max-w-3xl mx-auto px-4 sm:px-6 pt-10 pb-6 relative">
       <div
         className="portico-glow absolute -top-6 left-4 sm:left-6 w-24 h-24 rounded-full blur-2xl pointer-events-none"
-        style={{ background: "#E3A873" }}
+        style={{ background: "#16C4A8" }}
       />
       <div className="relative flex items-center justify-between gap-3 mb-2 flex-wrap">
         <div className="flex items-center gap-3">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: "#C6693D22", border: "1px solid #C6693D55" }}
+            style={{ background: "#009E8622", border: "1px solid #009E8655" }}
           >
-            <Home size={20} style={{ color: "#E3A873" }} />
+            <Home size={20} style={{ color: "#16C4A8" }} />
           </div>
           <h1
             className="text-2xl sm:text-3xl tracking-tight"
@@ -111,7 +111,7 @@ function Header({ tema, onToggleTema, onAtivarNotificacoes, sessao, onSair }) {
 function AvisoSemChaves() {
   return (
     <Card>
-      <p className="text-sm flex items-start gap-2" style={{ color: "#D98C6E" }}>
+      <p className="text-sm flex items-start gap-2" style={{ color: "#C24A3E" }}>
         <AlertCircle size={16} className="shrink-0 mt-0.5" />
         <span>
           O app está sem as chaves do Supabase, então nada é salvo. Crie o arquivo{" "}
@@ -127,7 +127,7 @@ export default function App() {
   const [role, setRole] = useState(papelInicial);
   const [pacienteView, setPacienteView] = useState("pedido");
   const [fisioView, setFisioView] = useState("cadastro");
-  const [tema, setTema] = useState("escuro");
+  const [tema, setTema] = useState("claro");
   const [toasts, setToasts] = useState([]);
   const [sessao, setSessao] = useState(null);
   const [souAdmin, setSouAdmin] = useState(false);
@@ -262,7 +262,7 @@ export default function App() {
 
   return (
     <div
-      className={`min-h-screen w-full ${tema === "claro" ? "theme-light" : ""}`}
+      className={`min-h-screen w-full ${tema === "escuro" ? "theme-dark" : ""}`}
       style={{
         background: "var(--bg)",
         color: "var(--text)",
