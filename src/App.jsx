@@ -24,7 +24,7 @@ import { Login } from "./components/Login";
 const Metricas = lazy(() =>
   import("./components/Metricas").then((m) => ({ default: m.Metricas }))
 );
-import { aoMudarSessao, carregarPainel, ehAdmin, sair, sessaoAtual } from "./lib/api";
+import { aoMudarSessao, carregarPainel, ehAdmin, ehFisio, sair, sessaoAtual } from "./lib/api";
 import { supabaseConfigurado } from "./lib/supabase";
 import { mensagemDeErro } from "./lib/utils";
 
@@ -130,6 +130,7 @@ export default function App() {
   const [toasts, setToasts] = useState([]);
   const [sessao, setSessao] = useState(null);
   const [souAdmin, setSouAdmin] = useState(false);
+  const [souFisio, setSouFisio] = useState(false);
   const [dadosPainel, setDadosPainel] = useState(PAINEL_VAZIO);
   const [loadingPainel, setLoadingPainel] = useState(false);
   const [erroPainel, setErroPainel] = useState("");
@@ -194,6 +195,28 @@ export default function App() {
     };
   }, [sessao]);
 
+  // Paciente e fisio usam a mesma conta pra logar. Sem essa checagem, quem
+  // já tem cadastro de fisioterapeuta podia cair (ou voltar) pro lado de
+  // paciente sem querer — e criar pedido como se fosse cliente da própria
+  // conta. Uma vez detectado, trava direto no lado fisio.
+  useEffect(() => {
+    if (!sessao) {
+      setSouFisio(false);
+      return;
+    }
+    let ativo = true;
+    ehFisio()
+      .then((v) => {
+        if (!ativo) return;
+        setSouFisio(v);
+        if (v) setRole((r) => (r === "paciente" ? "fisio" : r));
+      })
+      .catch(() => ativo && setSouFisio(false));
+    return () => {
+      ativo = false;
+    };
+  }, [sessao]);
+
   const recarregarPainel = useCallback(async () => {
     if (!sessao) return;
     setLoadingPainel(true);
@@ -246,9 +269,11 @@ export default function App() {
       />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 flex gap-2 pb-3 flex-wrap">
-        <RoleButton active={role === "paciente"} onClick={() => setRole("paciente")}>
-          <Home size={16} /> Sou paciente
-        </RoleButton>
+        {!souFisio && (
+          <RoleButton active={role === "paciente"} onClick={() => setRole("paciente")}>
+            <Home size={16} /> Sou paciente
+          </RoleButton>
+        )}
         <RoleButton active={role === "fisio"} onClick={() => setRole("fisio")}>
           <Stethoscope size={16} /> Sou fisioterapeuta
         </RoleButton>

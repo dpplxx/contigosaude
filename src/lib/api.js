@@ -201,6 +201,15 @@ export async function ehAdmin() {
   return data === true;
 }
 
+// Paciente e fisio usam a mesma conta — isso deixa o app travar direto na
+// aba certa quando a conta já tem cadastro de fisioterapeuta, em vez de
+// deixar a pessoa cair do lado errado.
+export async function ehFisio() {
+  const { data, error } = await cliente().rpc("hc_sou_fisio");
+  if (error) throw error;
+  return data === true;
+}
+
 export async function carregarPainel() {
   const db = cliente();
   const [fisios, pedidos, agendamentos, avaliacoes, mensagens] = await Promise.all([
