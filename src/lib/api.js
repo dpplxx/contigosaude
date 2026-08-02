@@ -238,28 +238,32 @@ export async function carregarPainel() {
   };
 }
 
-export async function agendar({ pedidoId, fisioId, data, horario }) {
-  const { error } = await cliente()
-    .from("agendamentos")
-    .insert({ pedido_id: pedidoId, fisio_id: fisioId, data, horario });
-  if (error) throw error;
+export function agendar({ pedidoId, fisioId, data, horario }) {
+  return rpc("hc_admin_criar_agendamento", {
+    p_pedido_id: pedidoId,
+    p_fisio_id: fisioId,
+    p_data: data,
+    p_horario: horario,
+  });
 }
 
-export async function atualizarStatusPedido(id, status) {
-  const { error } = await cliente().from("pedidos").update({ status }).eq("id", id);
-  if (error) throw error;
+export function atualizarStatusPedido(id, status) {
+  return rpc("hc_admin_atualizar_status_pedido", { p_pedido_id: id, p_status: status });
 }
 
-export async function atualizarStatusAgendamentoPainel(id, status) {
-  const { error } = await cliente().from("agendamentos").update({ status }).eq("id", id);
-  if (error) throw error;
+export function atualizarStatusAgendamentoPainel(id, status) {
+  return rpc("hc_admin_atualizar_status_agendamento", {
+    p_agendamento_id: id,
+    p_status: status,
+  });
 }
 
-export async function avaliarPeloPainel({ fisioId, nota, comentario }) {
-  const { error } = await cliente()
-    .from("avaliacoes")
-    .insert({ fisio_id: fisioId, nota, comentario: comentario || null });
-  if (error) throw error;
+export function avaliarPeloPainel({ fisioId, nota, comentario }) {
+  return rpc("hc_admin_avaliar", {
+    p_fisio_id: fisioId,
+    p_nota: nota,
+    p_comentario: comentario || null,
+  });
 }
 
 // ---------------------------------------------------------------------------
