@@ -1,31 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Heart, MapPin, Phone, RefreshCw, Star } from "lucide-react";
-import { Card, ErroInline, InnerRow, Tag, TextArea } from "./ui";
+import { MapPin, Phone, RefreshCw, Star } from "lucide-react";
+import { Card, ErroInline, Tag, TextArea } from "./ui";
 import { AgendamentoInfo, ChatThread } from "./Compartilhados";
 import { PrototypeWarning } from "./Ethics";
 import { BuscaFisios } from "./BuscaFisios";
 import { formatarDistancia } from "../lib/geo";
 import { avaliar, meusPedidos, registrarClique } from "../lib/api";
 import { mensagemDeErro, waLink } from "../lib/utils";
-
-const FAVORITOS_KEY = "fisio-em-casa:favoritos";
-
-function lerFavoritos() {
-  try {
-    const bruto = localStorage.getItem(FAVORITOS_KEY);
-    return bruto ? JSON.parse(bruto) : [];
-  } catch {
-    return [];
-  }
-}
-
-function gravarFavoritos(lista) {
-  try {
-    localStorage.setItem(FAVORITOS_KEY, JSON.stringify(lista));
-  } catch {
-    // Navegador em modo privado pode bloquear; favoritar é opcional.
-  }
-}
 
 export function RequestForm({ onToast }) {
   return (
@@ -114,7 +95,6 @@ export function PatientTracking({ onNotify }) {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState("");
-  const [favoritos, setFavoritos] = useState(lerFavoritos);
   const primeiraChecagem = useRef(true);
   const agendadosAnteriores = useRef(new Set());
 
@@ -160,24 +140,6 @@ export function PatientTracking({ onNotify }) {
     return () => clearInterval(intervalo);
   }, [carregar]);
 
-  const toggleFavorito = (fisio) => {
-    const jaTem = favoritos.some((f) => f.id === fisio.id);
-    const atual = jaTem
-      ? favoritos.filter((f) => f.id !== fisio.id)
-      : [
-          ...favoritos,
-          {
-            id: fisio.id,
-            nome: fisio.nome,
-            whatsapp: fisio.whatsapp,
-            cidade: fisio.cidade,
-            especialidades: fisio.especialidades,
-          },
-        ];
-    setFavoritos(atual);
-    gravarFavoritos(atual);
-  };
-
   if (loading && pedidos.length === 0) {
     return (
       <Card>
@@ -190,37 +152,6 @@ export function PatientTracking({ onNotify }) {
 
   return (
     <div className="space-y-4">
-      {favoritos.length > 0 && (
-        <Card>
-          <p className="text-sm font-medium mb-3 flex items-center gap-1.5">
-            <Heart size={14} fill="#D9756E" style={{ color: "#D9756E" }} /> Seus
-            fisioterapeutas favoritos
-          </p>
-          <div className="space-y-2">
-            {favoritos.map((p) => (
-              <InnerRow key={p.id}>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{p.nome}</p>
-                  <p className="text-xs" style={{ color: "var(--muted2)" }}>
-                    {p.cidade} · {p.especialidades?.join(", ")}
-                  </p>
-                </div>
-                <a
-                  href={waLink(p.whatsapp, `Olá ${p.nome}, preciso de atendimento domiciliar!`)}
-                  onClick={() => registrarClique(p.id)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="shrink-0 flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg"
-                  style={{ background: "#8FAE8B33", color: "#8FAE8B", border: "1px solid #8FAE8B55" }}
-                >
-                  <Phone size={12} /> WhatsApp
-                </a>
-              </InnerRow>
-            ))}
-          </div>
-        </Card>
-      )}
-
       <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-sm" style={{ color: "var(--muted1)" }}>
           {pedidos.length === 1 ? "1 pedido encontrado" : `${pedidos.length} pedidos encontrados`}
@@ -247,7 +178,6 @@ export function PatientTracking({ onNotify }) {
       {pedidos.map((r) => {
         const agendamento = r.agendamento;
         const fisio = agendamento?.fisio;
-        const favoritado = fisio ? favoritos.some((f) => f.id === fisio.id) : false;
         return (
           <Card key={r.id}>
             <div className="flex flex-wrap gap-2 mb-1">
@@ -284,14 +214,6 @@ export function PatientTracking({ onNotify }) {
                   </p>
                 )}
                 <div className="flex flex-wrap items-center gap-3 mt-2">
-                  <button
-                    onClick={() => toggleFavorito(fisio)}
-                    className="text-xs flex items-center gap-1"
-                    style={{ color: favoritado ? "#D9756E" : "var(--muted1)" }}
-                  >
-                    <Heart size={13} fill={favoritado ? "#D9756E" : "none"} />
-                    {favoritado ? "Favoritado" : "Favoritar este profissional"}
-                  </button>
                   <a
                     href={waLink(fisio.whatsapp, `Olá ${fisio.nome}, aqui é ${r.nome}.`)}
                     onClick={() => registrarClique(fisio.id)}
