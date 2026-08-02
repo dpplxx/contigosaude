@@ -1,0 +1,61 @@
+name: Testar RPCs do banco
+
+# Workflow separado do deploy de propósito: se um teste de banco falhar,
+# não deve travar a publicação do site. Sobe um Postgres efêmero só pra
+# este job — nunca toca no projeto Supabase de produção.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/**"
+  pull_request:
+    paths:
+      - "supabase/**"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar cliente psql
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+
+      - name: Extensões necessárias
+        run: psql -v ON_ERROR_STOP=1 -c "create extension if not exists pgcrypto;"
+
+      - name: Stub mínimo do Supabase (auth/storage/papéis)
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/00-stub-supabase.sql
+
+      - name: Aplicar schema consolidado
+        run: psql -v ON_ERROR_STOP=1 -f supabase/schema-atual.sql
+
+      - name: Aplicar migrations pendentes (ainda não rodadas em produção)
+        run: |
+          for f in supabase/migration-2026-*.sql; do
+            echo "Aplicando $f"
+            psql -v ON_ERROR_STOP=1 -f "$f"
+          done
+
+      - name: Rodar testes das RPCs de confiança
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/01-rpc-confianca.sql
