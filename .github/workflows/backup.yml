@@ -1,0 +1,51 @@
+name: Backup do banco (criptografado)
+
+# O plano Free do Supabase não inclui backup automático. Este workflow faz
+# um pg_dump diário, criptografa antes de guardar (o repositório é público
+# — sem isso, nome/WhatsApp de paciente ficariam baixáveis por qualquer
+# pessoa) e sobe como artifact do GitHub Actions.
+#
+# RESTAURAR:
+#   1. Baixe o artifact "db-backup-AAAA-MM-DD" da run desejada em Actions.
+#   2. Descriptografe:
+#      openssl enc -d -aes-256-cbc -pbkdf2 -in backup.dump.enc -out backup.dump -pass pass:SUA_CHAVE
+#   3. Restaure num projeto Supabase (ou Postgres local):
+#      pg_restore --no-owner --no-privileges -d "postgresql://..." backup.dump
+#
+# SUA_CHAVE é o valor do secret BACKUP_ENCRYPTION_KEY — guarde ele em algum
+# lugar seguro fora do GitHub também (gerenciador de senhas), porque sem
+# essa chave o backup é só um arquivo ilegível.
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 03:00 no horário de Brasília
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar cliente Postgres
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+
+      - name: Dump do banco
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: pg_dump "$DATABASE_URL" --no-owner --no-privileges -F c -f backup.dump
+
+      - name: Criptografar
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          openssl enc -aes-256-cbc -salt -pbkdf2 -in backup.dump -out backup.dump.enc -pass env:BACKUP_ENCRYPTION_KEY
+          rm backup.dump
+
+      - name: Nome do artifact com a data
+        id: data
+        run: echo "hoje=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ steps.data.outputs.hoje }}
+          path: backup.dump.enc
+          retention-days: 30
