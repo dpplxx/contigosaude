@@ -7,6 +7,9 @@ import {
   MousePointerClick,
   Phone,
   RefreshCw,
+  ShieldAlert,
+  ShieldCheck,
+  ShieldQuestion,
   Sparkles,
   Star,
   Upload,
@@ -34,6 +37,7 @@ import {
   avaliarPeloPainel,
   registrarClique,
   restaurarBackup,
+  verificarCrefito,
 } from "../lib/api";
 import {
   ESPECIALIDADES_FISIO,
@@ -201,6 +205,77 @@ function RatingWidget({ fisioId, onSubmitted }) {
         >
           Cancelar
         </button>
+      </div>
+    </div>
+  );
+}
+
+const CREFITO_STATUS_INFO = {
+  pendente: { label: "Pendente de verificação", color: "var(--muted1)", Icon: ShieldQuestion },
+  verificado: { label: "Verificado", color: "#8FAE8B", Icon: ShieldCheck },
+  rejeitado: { label: "Rejeitado", color: "#D98C6E", Icon: ShieldAlert },
+};
+
+function VerificacaoCrefito({ fisio, onDone }) {
+  const [saving, setSaving] = useState(false);
+  const [erro, setErro] = useState("");
+
+  if (!fisio.crefito) return null;
+
+  const info = CREFITO_STATUS_INFO[fisio.crefito_status] || CREFITO_STATUS_INFO.pendente;
+  const Icon = info.Icon;
+
+  const marcar = async (status) => {
+    setSaving(true);
+    setErro("");
+    try {
+      await verificarCrefito({ fisioId: fisio.id, status });
+      await onDone?.();
+    } catch (e) {
+      setErro(mensagemDeErro(e, "Não foi possível atualizar o status do CREFITO."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+      <p className="text-xs flex items-center gap-1.5" style={{ color: info.color }}>
+        <Icon size={13} /> CREFITO {fisio.crefito}
+        {fisio.crefito_uf ? `/${fisio.crefito_uf}` : ""} · {info.label}
+      </p>
+      <ErroInline>{erro}</ErroInline>
+      <div className="flex flex-wrap gap-3 mt-1">
+        {fisio.crefito_status !== "verificado" && (
+          <button
+            onClick={() => marcar("verificado")}
+            disabled={saving}
+            className="text-xs underline disabled:opacity-50"
+            style={{ color: "#8FAE8B" }}
+          >
+            Marcar como verificado
+          </button>
+        )}
+        {fisio.crefito_status !== "rejeitado" && (
+          <button
+            onClick={() => marcar("rejeitado")}
+            disabled={saving}
+            className="text-xs underline disabled:opacity-50"
+            style={{ color: "#D98C6E" }}
+          >
+            Marcar como rejeitado
+          </button>
+        )}
+        {fisio.crefito_status !== "pendente" && (
+          <button
+            onClick={() => marcar("pendente")}
+            disabled={saving}
+            className="text-xs underline disabled:opacity-50"
+            style={{ color: "var(--muted1)" }}
+          >
+            Voltar pra pendente
+          </button>
+        )}
       </div>
     </div>
   );
@@ -620,6 +695,7 @@ export function Painel({ dados, loading, erro, onRefresh }) {
                         {formatarMoeda(p.valor_sessao)} / sessão
                       </p>
                     )}
+                    <VerificacaoCrefito fisio={p} onDone={onRefresh} />
                     <RatingWidget fisioId={p.id} onSubmitted={onRefresh} />
                   </div>
                   <a

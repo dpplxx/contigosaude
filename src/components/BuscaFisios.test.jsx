@@ -34,4 +34,14 @@ describe('BuscaFisios', () => {
 
     expect(screen.getByText(/Informe a cidade e o bairro/)).toBeInTheDocument()
   })
+
+  it('barra o submit em silêncio se o campo honeypot vier preenchido', () => {
+    const { container } = render(<BuscaFisios />)
+
+    const honeypot = container.querySelector('input[name="site"]')
+    fireEvent.change(honeypot, { target: { value: 'http://spam.example' } })
+    fireEvent.submit(container.querySelector('form'))
+
+    expect(screen.queryByText(/Informe a cidade e o bairro/)).not.toBeInTheDocument()
+  })
 })

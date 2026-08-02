@@ -210,6 +210,10 @@ export async function ehFisio() {
   return data === true;
 }
 
+export function verificarCrefito({ fisioId, status }) {
+  return rpc("hc_verificar_crefito", { p_fisio_id: fisioId, p_status: status });
+}
+
 export async function carregarPainel() {
   const db = cliente();
   const [fisios, pedidos, agendamentos, avaliacoes, mensagens] = await Promise.all([

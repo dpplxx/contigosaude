@@ -6,6 +6,8 @@ import {
   MapPin,
   Phone,
   RefreshCw,
+  ShieldAlert,
+  ShieldCheck,
   Sparkles,
   User,
 } from "lucide-react";
@@ -665,6 +667,18 @@ export function PhysioDashboard({ onNotify }) {
       </div>
 
       <ErroInline>{erro}</ErroInline>
+
+      {fisio.crefito_status === "verificado" && (
+        <p className="text-sm flex items-center gap-1.5" style={{ color: "#8FAE8B" }}>
+          <ShieldCheck size={15} /> Seu CREFITO foi verificado pela nossa equipe.
+        </p>
+      )}
+      {fisio.crefito_status === "rejeitado" && (
+        <p className="text-sm flex items-center gap-1.5" style={{ color: "#D98C6E" }}>
+          <ShieldAlert size={15} /> Não conseguimos confirmar seu CREFITO. Confira o número
+          cadastrado ou fale com a gente.
+        </p>
+      )}
 
       {!fisio.tem_coordenadas && (
         <Card>

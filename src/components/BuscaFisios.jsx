@@ -39,6 +39,12 @@ export function BuscaFisios() {
   const [fisios, setFisios] = useState(null);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
+  // Honeypot: campo escondido de humano nenhum, mas visível pra bot que
+  // preenche todo input do formulário. Filtra os robôs mais simples sem
+  // depender de captcha pago e sem falso positivo em quem usa autofill
+  // (diferente de um filtro por tempo de preenchimento). Se algum dia isso
+  // não bastar, dá pra reforçar no backend.
+  const [site, setSite] = useState("");
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -55,6 +61,11 @@ export function BuscaFisios() {
 
   const buscar = async (e) => {
     e?.preventDefault?.();
+    // Preencheu o campo escondido: provavelmente é robô. Sai calado, sem
+    // dar pista de que foi barrado.
+    if (site) {
+      return;
+    }
     if (!form.cidade || !form.bairro) {
       setErro("Informe a cidade e o bairro.");
       return;
@@ -99,6 +110,17 @@ export function BuscaFisios() {
         </p>
 
         <form onSubmit={buscar} className="space-y-4">
+          <input
+            type="text"
+            name="site"
+            value={site}
+            onChange={(e) => setSite(e.target.value)}
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }}
+          />
+
           <Field label="Seu nome (ou quem vai receber o atendimento)">
             <TextInput
               value={form.nome}
@@ -322,11 +344,21 @@ function CartaFisio({ fisio, whatsappPaciente }) {
         )}
 
         <div className="flex items-center gap-3 mt-2 flex-wrap">
-          {fisio.crefito && (
+          {fisio.crefito && fisio.crefito_status === "verificado" && (
             <span
               className="flex items-center gap-1 text-xs"
               style={{ color: "#8FAE8B" }}
-              title="Número de registro profissional informado no cadastro"
+              title="Registro profissional conferido pela nossa equipe"
+            >
+              <ShieldCheck size={13} />
+              CREFITO verificado{fisio.crefito_uf ? ` (${fisio.crefito_uf})` : ""}
+            </span>
+          )}
+          {fisio.crefito && fisio.crefito_status !== "verificado" && (
+            <span
+              className="flex items-center gap-1 text-xs"
+              style={{ color: "var(--muted1)" }}
+              title="Número informado no cadastro, ainda não conferido pela nossa equipe"
             >
               <ShieldCheck size={13} />
               CREFITO informado{fisio.crefito_uf ? ` (${fisio.crefito_uf})` : ""}
