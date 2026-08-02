@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1C2A28" />
+    <meta name="theme-color" content="#FAF6EF" />
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://zjeyzqxphzzbitgrkoac.supabase.co; font-src 'self'; connect-src 'self' https://zjeyzqxphzzbitgrkoac.supabase.co https://brasilapi.com.br https://viacep.com.br https://nominatim.openstreetmap.org; object-src 'none'; base-uri 'self'; form-action 'self';"
@@ -22,15 +22,16 @@
     <meta property="og:type" content="website" />
     <style>
       :root {
-        --bg: #1c2a28;
-        --card: #24352f;
-        --border: #33443e;
-        --text: #f2ede4;
-        --muted: #a9b8b2;
-        --muted-soft: #8b9b94;
-        --terracota: #c6693d;
-        --areia: #e3a873;
-        --verde: #8fae8b;
+        --bg: #faf6ef;
+        --surface: #ffffff;
+        --border: #e8e1d3;
+        --text: #16211d;
+        --muted: #5b6b63;
+        --muted-soft: #7c8a83;
+        --accent: #009e86;
+        --accent-dark: #007f6c;
+        --accent-soft: rgba(0, 158, 134, 0.1);
+        --accent-soft-border: rgba(0, 158, 134, 0.3);
       }
 
       * {
@@ -41,7 +42,8 @@
         margin: 0;
         background: var(--bg);
         color: var(--text);
-        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+          Arial, sans-serif;
         line-height: 1.6;
         -webkit-font-smoothing: antialiased;
       }
@@ -55,10 +57,9 @@
       h1,
       h2,
       h3 {
-        font-family: Georgia, "Times New Roman", serif;
-        font-weight: 400;
-        letter-spacing: -0.01em;
-        line-height: 1.2;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        line-height: 1.15;
         margin: 0;
       }
 
@@ -85,70 +86,37 @@
       .marca-icone {
         width: 2.5rem;
         height: 2.5rem;
-        border-radius: 0.6rem;
-        background: rgba(198, 105, 61, 0.13);
-        border: 1px solid rgba(198, 105, 61, 0.33);
+        border-radius: 0.85rem;
+        background: var(--accent-soft);
         display: grid;
         place-items: center;
         flex-shrink: 0;
       }
 
       .marca-nome {
-        font-family: Georgia, serif;
-        font-size: 1.35rem;
+        font-weight: 600;
+        font-size: 1.3rem;
+        letter-spacing: -0.01em;
       }
 
       /* ---------- herói ---------- */
 
       .heroi {
         position: relative;
-        padding: 3.5rem 0 3rem;
-      }
-
-      .brilho {
-        position: absolute;
-        top: -2rem;
-        left: -3rem;
-        width: 16rem;
-        height: 16rem;
-        background: var(--areia);
-        border-radius: 50%;
-        filter: blur(80px);
-        opacity: 0.16;
-        pointer-events: none;
-        animation: pulsar 5s ease-in-out infinite;
-      }
-
-      @keyframes pulsar {
-        0%,
-        100% {
-          opacity: 0.13;
-          transform: scale(1);
-        }
-        50% {
-          opacity: 0.22;
-          transform: scale(1.09);
-        }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .brilho {
-          animation: none;
-        }
+        padding: 4rem 0 3.5rem;
       }
 
       .heroi h1 {
-        font-size: clamp(2.1rem, 6vw, 3.4rem);
-        max-width: 18ch;
-        position: relative;
+        font-size: clamp(2.4rem, 6.6vw, 4rem);
+        max-width: 16ch;
+        font-weight: 600;
       }
 
       .heroi .linha-fina {
         color: var(--muted);
-        font-size: clamp(1rem, 2.4vw, 1.2rem);
-        margin-top: 1.1rem;
-        max-width: 46ch;
-        position: relative;
+        font-size: clamp(1.05rem, 2.4vw, 1.25rem);
+        margin-top: 1.25rem;
+        max-width: 44ch;
       }
 
       /* ---------- botões ---------- */
@@ -157,29 +125,28 @@
         display: flex;
         flex-wrap: wrap;
         gap: 0.85rem;
-        margin-top: 2.2rem;
-        position: relative;
+        margin-top: 2.4rem;
       }
 
       .botao {
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 1rem 2rem;
-        border-radius: 0.7rem;
+        padding: 1rem 2.1rem;
+        border-radius: 999px;
         text-decoration: none;
-        font-weight: 500;
-        font-size: 1.05rem;
+        font-weight: 600;
+        font-size: 1.03rem;
         transition:
           transform 0.15s ease,
-          filter 0.15s ease;
+          filter 0.15s ease,
+          background 0.15s ease;
         cursor: pointer;
         border: none;
       }
 
       .botao:hover {
         transform: translateY(-1px);
-        filter: brightness(1.06);
       }
 
       .botao:active {
@@ -187,25 +154,33 @@
       }
 
       .botao-principal {
-        background: var(--terracota);
-        color: #14231f;
+        background: var(--accent);
+        color: #ffffff;
+      }
+
+      .botao-principal:hover {
+        background: var(--accent-dark);
       }
 
       .botao-secundario {
-        background: transparent;
+        background: var(--surface);
         color: var(--text);
-        border: 1px solid var(--border);
+        border: 1.5px solid var(--border);
+      }
+
+      .botao-secundario:hover {
+        border-color: var(--accent);
       }
 
       /* ---------- seções ---------- */
 
       section {
-        padding: 3rem 0;
+        padding: 3.5rem 0;
         border-top: 1px solid var(--border);
       }
 
       section h2 {
-        font-size: clamp(1.5rem, 3.6vw, 2rem);
+        font-size: clamp(1.6rem, 3.6vw, 2.15rem);
       }
 
       .subtitulo {
@@ -218,17 +193,17 @@
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
         gap: 1.1rem;
-        margin-top: 2rem;
+        margin-top: 2.2rem;
         padding: 0;
         list-style: none;
         counter-reset: passo;
       }
 
       .passo {
-        background: var(--card);
+        background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 0.9rem;
-        padding: 1.4rem;
+        border-radius: 1.1rem;
+        padding: 1.6rem;
       }
 
       .passo::before {
@@ -236,14 +211,14 @@
         content: counter(passo);
         display: grid;
         place-items: center;
-        width: 1.9rem;
-        height: 1.9rem;
+        width: 2rem;
+        height: 2rem;
         border-radius: 50%;
-        background: rgba(227, 168, 115, 0.16);
-        color: var(--areia);
-        font-family: Georgia, serif;
+        background: var(--accent);
+        color: #ffffff;
+        font-weight: 600;
         font-size: 0.95rem;
-        margin-bottom: 0.8rem;
+        margin-bottom: 0.9rem;
       }
 
       .passo h3 {
@@ -259,53 +234,54 @@
       /* ---------- destaque ---------- */
 
       .destaque {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 1rem;
-        padding: 1.75rem;
-        margin-top: 2rem;
+        background: var(--text);
+        color: var(--bg);
+        border-radius: 1.25rem;
+        padding: 2rem;
+        margin-top: 2.2rem;
       }
 
       .destaque h3 {
-        font-size: 1.15rem;
+        font-size: 1.2rem;
         margin-bottom: 0.5rem;
+        color: #ffffff;
       }
 
       .destaque p {
-        color: var(--muted);
+        color: #c7cec9;
       }
 
       .lista-limpa {
         list-style: none;
         padding: 0;
-        margin: 1.2rem 0 0;
+        margin: 1.3rem 0 0;
         display: grid;
-        gap: 0.7rem;
+        gap: 0.75rem;
       }
 
       .lista-limpa li {
         display: flex;
         gap: 0.65rem;
-        color: var(--muted);
+        color: #c7cec9;
         font-size: 0.97rem;
       }
 
       .marcador {
-        color: var(--verde);
+        color: #5fe0c4;
         flex-shrink: 0;
         margin-top: 0.15rem;
       }
 
       .aviso-honesto {
-        border-left: 3px solid var(--areia);
-        padding-left: 1.1rem;
-        margin-top: 2rem;
+        border-left: 3px solid var(--accent);
+        padding-left: 1.2rem;
+        margin-top: 2.2rem;
         color: var(--muted);
       }
 
       .aviso-honesto strong {
         color: var(--text);
-        font-weight: 500;
+        font-weight: 600;
       }
 
       /* ---------- confiança ---------- */
@@ -314,14 +290,14 @@
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
         gap: 1rem;
-        margin-top: 2rem;
+        margin-top: 2.2rem;
       }
 
       .selo {
-        background: var(--card);
+        background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 0.9rem;
-        padding: 1.2rem;
+        border-radius: 1.1rem;
+        padding: 1.3rem;
         display: flex;
         gap: 0.8rem;
         align-items: flex-start;
@@ -329,10 +305,10 @@
 
       .selo-icone {
         flex-shrink: 0;
-        width: 2.2rem;
-        height: 2.2rem;
+        width: 2.3rem;
+        height: 2.3rem;
         border-radius: 50%;
-        background: rgba(143, 174, 139, 0.15);
+        background: var(--accent-soft);
         display: grid;
         place-items: center;
       }
@@ -350,27 +326,34 @@
       .contador {
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        background: rgba(227, 168, 115, 0.12);
-        border: 1px solid rgba(227, 168, 115, 0.35);
-        border-radius: 2rem;
-        padding: 0.5rem 1.1rem;
+        gap: 0.55rem;
+        background: var(--accent-soft);
+        border: 1px solid var(--accent-soft-border);
+        border-radius: 999px;
+        padding: 0.55rem 1.2rem;
         font-size: 0.9rem;
-        color: var(--areia);
-        margin-top: 1.2rem;
+        font-weight: 500;
+        color: var(--accent-dark);
+        margin-top: 1.4rem;
       }
 
       .contador .ponto {
         width: 0.45rem;
         height: 0.45rem;
         border-radius: 50%;
-        background: var(--verde);
+        background: var(--accent);
         animation: pulsar-ponto 2s ease-in-out infinite;
       }
 
       @keyframes pulsar-ponto {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.4; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .contador .ponto {
+          animation: none;
+        }
       }
 
       /* ---------- rodapé ---------- */
@@ -398,7 +381,7 @@
       <header>
         <div class="marca">
           <span class="marca-icone" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E3A873" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#009E86" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 10.5 12 3l9 7.5" />
               <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
             </svg>
@@ -408,7 +391,6 @@
       </header>
 
       <div class="heroi">
-        <div class="brilho" aria-hidden="true"></div>
         <h1>Fisioterapia que vai até você</h1>
         <p class="linha-fina">
           Diga seu CEP e encontramos fisioterapeutas que atendem na sua região.
@@ -454,7 +436,7 @@
       <section>
         <h2>Como funciona</h2>
         <p class="subtitulo">
-          Três passos, tudo pelo celular. Você não precisa criar conta nem instalar nada.
+          Três passos, tudo pelo celular. Sem conta, sem instalar nada.
         </p>
         <ol class="passos">
           <li class="passo">
@@ -517,7 +499,7 @@
         <div class="selos">
           <div class="selo">
             <span class="selo-icone" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8FAE8B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#009E86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
               </svg>
             </span>
@@ -531,7 +513,7 @@
           </div>
           <div class="selo">
             <span class="selo-icone" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8FAE8B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#009E86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 12l2 2 4-4" />
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
               </svg>
@@ -547,7 +529,7 @@
           </div>
           <div class="selo">
             <span class="selo-icone" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8FAE8B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#009E86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="3" />
                 <path d="M3 12s3-7 9-7 9 7 9 7-3 7-9 7-9-7-9-7Z" />
               </svg>
