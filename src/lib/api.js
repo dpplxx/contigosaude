@@ -214,6 +214,18 @@ export function verificarCrefito({ fisioId, status }) {
   return rpc("hc_verificar_crefito", { p_fisio_id: fisioId, p_status: status });
 }
 
+export function salvarPushSubscription({ endpoint, p256dh, auth }) {
+  return rpc("hc_salvar_push_subscription", {
+    p_endpoint: endpoint,
+    p_p256dh: p256dh,
+    p_auth: auth,
+  });
+}
+
+export function removerPushSubscription(endpoint) {
+  return rpc("hc_remover_push_subscription", { p_endpoint: endpoint });
+}
+
 export async function carregarPainel() {
   const db = cliente();
   const [fisios, pedidos, agendamentos, avaliacoes, mensagens] = await Promise.all([

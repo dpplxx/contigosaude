@@ -1,0 +1,19 @@
+{
+  "name": "Contigo Saúde",
+  "short_name": "Contigo Saúde",
+  "description": "Fisioterapia domiciliar perto de você.",
+  "start_url": "/app.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1C2A28",
+  "theme_color": "#1C2A28",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

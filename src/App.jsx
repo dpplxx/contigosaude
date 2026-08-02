@@ -27,6 +27,7 @@ const Metricas = lazy(() =>
 import { aoMudarSessao, carregarPainel, ehAdmin, ehFisio, sair, sessaoAtual } from "./lib/api";
 import { supabaseConfigurado } from "./lib/supabase";
 import { mensagemDeErro } from "./lib/utils";
+import { ativarPush, pushSuportado } from "./lib/push";
 
 const PAINEL_VAZIO = {
   fisios: [],
@@ -156,19 +157,28 @@ export default function App() {
     [addToast]
   );
 
-  const pedirPermissaoNotificacao = () => {
+  const pedirPermissaoNotificacao = async () => {
     try {
       if (typeof Notification === "undefined") {
         addToast("Este navegador não suporta notificações.", "erro");
         return;
       }
+
+      // Logada + suporte a push real: notificação chega mesmo com a aba
+      // fechada, não só enquanto o app está aberto.
+      if (sessao && pushSuportado()) {
+        await ativarPush();
+        addToast("Notificações ativadas — você recebe mesmo com o app fechado.");
+        return;
+      }
+
       if (Notification.permission === "default") {
         Notification.requestPermission();
       } else {
         addToast("As notificações já estão configuradas no navegador.");
       }
-    } catch {
-      addToast("Este navegador não suporta notificações.", "erro");
+    } catch (e) {
+      addToast(mensagemDeErro(e, "Não foi possível ativar as notificações."), "erro");
     }
   };
 
