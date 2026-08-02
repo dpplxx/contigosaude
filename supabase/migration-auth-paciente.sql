@@ -3,6 +3,20 @@
 --
 -- Esta migração adiciona suporte a autenticação real de pacientes com email.
 -- Corre no SQL Editor do Supabase: Settings → SQL Editor → "New Query"
+--
+-- ATUALIZAÇÃO (auditoria de segurança, 2026-08-01): a função
+-- hc_meus_pedidos_auth() criada aqui embaixo tinha um problema sério —
+-- identificava o paciente lendo auth.users.raw_user_meta_data->>'whatsapp',
+-- um campo que qualquer usuário autenticado pode escrever em si mesmo.
+-- Bastava definir esse metadado como o WhatsApp de outra pessoa pra ler os
+-- pedidos dela, e a função nem exigia login (estava liberada pra "anon").
+-- Nunca foi usada pelo frontend. Foi apagada em
+-- migration-auditoria-seguranca.sql — mantém-se a definição aqui só como
+-- registro histórico do que rodou em produção antes da correção.
+--
+-- A tabela "pacientes" e o trigger handle_new_auth_user abaixo continuam
+-- existindo (RLS está correto), mas não são usados por nenhuma tela hoje —
+-- veja a nota em migration-auditoria-seguranca.sql.
 -- ============================================================================
 
 -- Tabela para correlacionar usuários Supabase Auth com pedidos de pacientes

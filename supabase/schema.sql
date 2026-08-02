@@ -771,15 +771,26 @@ create index if not exists auditoria_linha_idx on public.auditoria (linha_id, cr
 
 -- Retenção automática: deletar registros com mais de 90 dias
 -- Executar manualmente 1x ao mês ou via cron job
+--
+-- Restrita a administradores (hc_e_admin()) — sem essa checagem, qualquer
+-- conta autenticada (ou, pior, sem checar aqui, até anon por causa do
+-- default privilege do Postgres) poderia disparar essa limpeza à vontade.
+-- Achado e corrigido na auditoria de segurança de 2026-08-01, veja
+-- migration-auditoria-seguranca.sql.
 create or replace function public.hc_limpar_auditoria()
 returns void
-language sql
+language plpgsql
 security definer
 set search_path = public, pg_temp
 as $$
+begin
+  if not hc_e_admin() then
+    raise exception 'Sem permissão. Esta ação é restrita a administradores.';
+  end if;
+
   delete from auditoria
   where criada_em < now() - interval '90 days';
-$$;
+end $$;
 
 -- 4. FUNÇÃO PARA ENCRIPTAR DADOS SENSÍVEIS
 --
@@ -812,12 +823,22 @@ as $$
 $$;
 
 -- 5. FUNÇÃO PARA ANONIMIZAR DADOS (LGPD)
+--
+-- Restrita a administradores. Achada sem essa checagem — e liberada até
+-- pra "anon" — na auditoria de segurança de 2026-08-01: qualquer visitante
+-- do site, sem login, podia apagar/corromper o pedido de qualquer paciente
+-- só sabendo o id. Veja migration-auditoria-seguranca.sql.
 create or replace function public.hc_anonimizar_paciente(p_paciente_id uuid)
 returns void
-language sql
+language plpgsql
 security definer
 set search_path = public, pg_temp
 as $$
+begin
+  if not hc_e_admin() then
+    raise exception 'Sem permissão. Esta ação é restrita a administradores.';
+  end if;
+
   update public.pedidos
   set
     nome = 'Paciente Anônimo',
@@ -830,7 +851,7 @@ as $$
   update public.agendamentos
   set status = 'cancelado'
   where pedido_id = p_paciente_id;
-$$;
+end $$;
 
 -- 5. NOTIFICAÇÕES (quando pedido compatível é criado)
 create or replace function public.hc_notificar_fisios(p_pedido_id uuid)
@@ -879,7 +900,17 @@ create policy auditoria_admin_only on public.auditoria for all to authenticated
   with check (public.hc_e_admin());
 
 grant execute on function public.hc_notificar_fisios(uuid) to authenticated;
+
+-- hc_limpar_auditoria e hc_anonimizar_paciente checam hc_e_admin() por
+-- dentro, mas o revoke explícito de "public, anon" fecha a porta mesmo
+-- antes disso — Postgres concede EXECUTE a PUBLIC por padrão toda vez que
+-- a função é recriada, e "grant ... to authenticated" sozinho não desfaz
+-- esse grant padrão.
+revoke all on function public.hc_limpar_auditoria() from public, anon;
 grant execute on function public.hc_limpar_auditoria() to authenticated;
+
 grant execute on function public.hc_encriptar_crefito(text) to anon, authenticated;
 grant execute on function public.hc_descriptografar_crefito(text) to authenticated;
+
+revoke all on function public.hc_anonimizar_paciente(uuid) from public, anon;
 grant execute on function public.hc_anonimizar_paciente(uuid) to authenticated;
