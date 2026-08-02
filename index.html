@@ -23,100 +23,138 @@
     <style>
       :root {
         --bg: #faf6ef;
-        --surface: #ffffff;
-        --border: #e8e1d3;
-        --text: #16211d;
+        --ink: #10201b;
+        --tinta: #f2ede1;
         --muted: #5b6b63;
-        --muted-soft: #7c8a83;
         --accent: #009e86;
-        --accent-dark: #007f6c;
-        --accent-soft: rgba(0, 158, 134, 0.1);
-        --accent-soft-border: rgba(0, 158, 134, 0.3);
+        --accent-ink: #003b32;
+        --linha: #010c;
       }
 
       * {
         box-sizing: border-box;
       }
 
+      html {
+        scroll-behavior: smooth;
+      }
+
       body {
         margin: 0;
         background: var(--bg);
-        color: var(--text);
+        color: var(--ink);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
           Arial, sans-serif;
-        line-height: 1.6;
+        line-height: 1.55;
         -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
       }
 
-      .wrap {
-        max-width: 62rem;
+      .cx {
+        max-width: 68rem;
         margin: 0 auto;
-        padding: 0 1.25rem;
+        padding: 0 1.5rem;
       }
 
-      h1,
-      h2,
-      h3 {
-        font-weight: 600;
-        letter-spacing: -0.02em;
-        line-height: 1.15;
+      h1, h2, h3 {
+        font-weight: 800;
+        letter-spacing: -0.035em;
+        line-height: 0.98;
         margin: 0;
       }
 
-      p {
-        margin: 0;
-      }
-
-      a {
-        color: inherit;
-      }
+      p { margin: 0; }
+      a { color: inherit; }
 
       /* ---------- topo ---------- */
 
-      header {
-        padding: 2rem 0 0;
+      .topo {
+        padding: 1.75rem 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
       }
 
       .marca {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 0.6rem;
+        font-weight: 800;
+        font-size: 1.15rem;
+        letter-spacing: -0.02em;
       }
 
-      .marca-icone {
-        width: 2.5rem;
-        height: 2.5rem;
-        border-radius: 0.85rem;
-        background: var(--accent-soft);
-        display: grid;
-        place-items: center;
-        flex-shrink: 0;
-      }
+      .marca svg { flex-shrink: 0; }
 
-      .marca-nome {
+      .topo a.entrar {
         font-weight: 600;
-        font-size: 1.3rem;
-        letter-spacing: -0.01em;
+        font-size: 0.9rem;
+        text-decoration: none;
+        padding: 0.5rem 1.1rem;
+        border-radius: 999px;
+        border: 1.5px solid var(--ink);
       }
 
       /* ---------- herói ---------- */
 
       .heroi {
         position: relative;
-        padding: 4rem 0 3.5rem;
+        padding: 2.5rem 0 5rem;
+        overflow: visible;
+      }
+
+      .forma {
+        position: absolute;
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .forma-1 {
+        top: -4rem;
+        right: -6rem;
+        width: 26rem;
+      }
+
+      .forma-2 {
+        bottom: -3rem;
+        right: 8%;
+        width: 5rem;
+        opacity: 0.9;
+      }
+
+      .heroi-grade {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 1.35fr 1fr;
+        gap: 2rem;
+        align-items: end;
+      }
+
+      @media (max-width: 56rem) {
+        .heroi-grade {
+          grid-template-columns: 1fr;
+        }
       }
 
       .heroi h1 {
-        font-size: clamp(2.4rem, 6.6vw, 4rem);
-        max-width: 16ch;
-        font-weight: 600;
+        font-size: clamp(2.8rem, 7.2vw, 5.6rem);
+        max-width: 13ch;
+      }
+
+      .heroi h1 em {
+        font-style: normal;
+        color: var(--accent);
+      }
+
+      .heroi-lateral {
+        padding-bottom: 0.5rem;
       }
 
       .heroi .linha-fina {
         color: var(--muted);
-        font-size: clamp(1.05rem, 2.4vw, 1.25rem);
-        margin-top: 1.25rem;
-        max-width: 44ch;
+        font-size: clamp(1.05rem, 2vw, 1.2rem);
+        max-width: 32ch;
       }
 
       /* ---------- botões ---------- */
@@ -125,221 +163,53 @@
         display: flex;
         flex-wrap: wrap;
         gap: 0.85rem;
-        margin-top: 2.4rem;
+        margin-top: 1.6rem;
       }
 
       .botao {
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 1rem 2.1rem;
+        padding: 1.05rem 2rem;
         border-radius: 999px;
         text-decoration: none;
-        font-weight: 600;
-        font-size: 1.03rem;
-        transition:
-          transform 0.15s ease,
-          filter 0.15s ease,
-          background 0.15s ease;
+        font-weight: 700;
+        font-size: 1rem;
+        letter-spacing: -0.01em;
+        transition: transform 0.15s ease, background 0.15s ease;
         cursor: pointer;
         border: none;
       }
 
-      .botao:hover {
-        transform: translateY(-1px);
-      }
-
-      .botao:active {
-        transform: translateY(0);
-      }
+      .botao:hover { transform: translateY(-2px); }
+      .botao:active { transform: translateY(0); }
 
       .botao-principal {
-        background: var(--accent);
-        color: #ffffff;
+        background: var(--ink);
+        color: #fff;
       }
 
-      .botao-principal:hover {
-        background: var(--accent-dark);
-      }
+      .botao-principal:hover { background: var(--accent-ink); }
 
       .botao-secundario {
-        background: var(--surface);
-        color: var(--text);
-        border: 1.5px solid var(--border);
-      }
-
-      .botao-secundario:hover {
-        border-color: var(--accent);
-      }
-
-      /* ---------- seções ---------- */
-
-      section {
-        padding: 3.5rem 0;
-        border-top: 1px solid var(--border);
-      }
-
-      section h2 {
-        font-size: clamp(1.6rem, 3.6vw, 2.15rem);
-      }
-
-      .subtitulo {
-        color: var(--muted);
-        margin-top: 0.6rem;
-        max-width: 52ch;
-      }
-
-      .passos {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-        gap: 1.1rem;
-        margin-top: 2.2rem;
-        padding: 0;
-        list-style: none;
-        counter-reset: passo;
-      }
-
-      .passo {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 1.1rem;
-        padding: 1.6rem;
-      }
-
-      .passo::before {
-        counter-increment: passo;
-        content: counter(passo);
-        display: grid;
-        place-items: center;
-        width: 2rem;
-        height: 2rem;
-        border-radius: 50%;
-        background: var(--accent);
-        color: #ffffff;
-        font-weight: 600;
-        font-size: 0.95rem;
-        margin-bottom: 0.9rem;
-      }
-
-      .passo h3 {
-        font-size: 1.1rem;
-        margin-bottom: 0.4rem;
-      }
-
-      .passo p {
-        color: var(--muted);
-        font-size: 0.95rem;
-      }
-
-      /* ---------- destaque ---------- */
-
-      .destaque {
-        background: var(--text);
-        color: var(--bg);
-        border-radius: 1.25rem;
-        padding: 2rem;
-        margin-top: 2.2rem;
-      }
-
-      .destaque h3 {
-        font-size: 1.2rem;
-        margin-bottom: 0.5rem;
-        color: #ffffff;
-      }
-
-      .destaque p {
-        color: #c7cec9;
-      }
-
-      .lista-limpa {
-        list-style: none;
-        padding: 0;
-        margin: 1.3rem 0 0;
-        display: grid;
-        gap: 0.75rem;
-      }
-
-      .lista-limpa li {
-        display: flex;
-        gap: 0.65rem;
-        color: #c7cec9;
-        font-size: 0.97rem;
-      }
-
-      .marcador {
-        color: #5fe0c4;
-        flex-shrink: 0;
-        margin-top: 0.15rem;
-      }
-
-      .aviso-honesto {
-        border-left: 3px solid var(--accent);
-        padding-left: 1.2rem;
-        margin-top: 2.2rem;
-        color: var(--muted);
-      }
-
-      .aviso-honesto strong {
-        color: var(--text);
-        font-weight: 600;
-      }
-
-      /* ---------- confiança ---------- */
-
-      .selos {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-        gap: 1rem;
-        margin-top: 2.2rem;
-      }
-
-      .selo {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 1.1rem;
-        padding: 1.3rem;
-        display: flex;
-        gap: 0.8rem;
-        align-items: flex-start;
-      }
-
-      .selo-icone {
-        flex-shrink: 0;
-        width: 2.3rem;
-        height: 2.3rem;
-        border-radius: 50%;
-        background: var(--accent-soft);
-        display: grid;
-        place-items: center;
-      }
-
-      .selo h3 {
-        font-size: 0.98rem;
-        margin-bottom: 0.3rem;
-      }
-
-      .selo p {
-        color: var(--muted);
-        font-size: 0.88rem;
+        background: transparent;
+        color: var(--ink);
+        border: 1.5px solid var(--ink);
       }
 
       .contador {
         display: inline-flex;
         align-items: center;
-        gap: 0.55rem;
-        background: var(--accent-soft);
-        border: 1px solid var(--accent-soft-border);
-        border-radius: 999px;
-        padding: 0.55rem 1.2rem;
-        font-size: 0.9rem;
-        font-weight: 500;
-        color: var(--accent-dark);
-        margin-top: 1.4rem;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--accent-ink);
+        margin-top: 1.3rem;
       }
 
       .contador .ponto {
-        width: 0.45rem;
-        height: 0.45rem;
+        width: 0.5rem;
+        height: 0.5rem;
         border-radius: 50%;
         background: var(--accent);
         animation: pulsar-ponto 2s ease-in-out infinite;
@@ -347,21 +217,196 @@
 
       @keyframes pulsar-ponto {
         0%, 100% { opacity: 1; }
-        50% { opacity: 0.4; }
+        50% { opacity: 0.35; }
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .contador .ponto {
-          animation: none;
-        }
+        .contador .ponto { animation: none; }
       }
+
+      /* ---------- faixa cheia ---------- */
+
+      .faixa {
+        width: 100%;
+      }
+
+      .faixa-clara { background: var(--bg); }
+      .faixa-papel { background: var(--tinta); }
+      .faixa-escura { background: var(--ink); color: var(--bg); }
+
+      .faixa-interna {
+        padding: 4.5rem 0;
+      }
+
+      .rotulo {
+        display: inline-block;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent-ink);
+      }
+
+      .faixa-escura .rotulo { color: #7fe6d4; }
+
+      .faixa h2 {
+        font-size: clamp(1.9rem, 4.2vw, 2.9rem);
+        margin-top: 0.5rem;
+        max-width: 16ch;
+      }
+
+      .faixa-legenda {
+        color: var(--muted);
+        margin-top: 0.9rem;
+        max-width: 42ch;
+        font-size: 1.05rem;
+      }
+
+      .faixa-escura .faixa-legenda { color: #b7c4bf; }
+
+      /* ---------- como funciona: lista editorial ---------- */
+
+      .passos {
+        margin-top: 3rem;
+        padding: 0;
+        list-style: none;
+      }
+
+      .passo {
+        display: grid;
+        grid-template-columns: 5.5rem 1fr;
+        gap: 1.5rem;
+        padding: 1.9rem 0;
+        border-top: 1px solid var(--linha);
+      }
+
+      .passos li:last-child { border-bottom: 1px solid var(--linha); }
+
+      .passo-num {
+        font-size: 2.4rem;
+        font-weight: 800;
+        color: var(--accent);
+        letter-spacing: -0.03em;
+        line-height: 1;
+      }
+
+      .passo h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      .passo p {
+        color: var(--muted);
+        margin-top: 0.5rem;
+        max-width: 46ch;
+      }
+
+      @media (max-width: 34rem) {
+        .passo { grid-template-columns: 1fr; gap: 0.4rem; }
+      }
+
+      /* ---------- profissionais (bloco escuro) ---------- */
+
+      .prof-grade {
+        margin-top: 2.5rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3rem;
+        align-items: start;
+      }
+
+      @media (max-width: 56rem) {
+        .prof-grade { grid-template-columns: 1fr; gap: 2rem; }
+      }
+
+      .prof-lista {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        gap: 1.4rem;
+      }
+
+      .prof-lista li {
+        display: flex;
+        gap: 0.9rem;
+        font-size: 1.05rem;
+      }
+
+      .prof-lista strong {
+        color: #fff;
+        font-weight: 700;
+      }
+
+      .prof-lista span.n {
+        color: var(--accent);
+        font-weight: 800;
+        flex-shrink: 0;
+      }
+
+      .prof-lista p {
+        color: #b7c4bf;
+      }
+
+      /* ---------- confiança ---------- */
+
+      .confianca-lista {
+        margin-top: 2.8rem;
+        display: grid;
+        gap: 0;
+      }
+
+      .confianca-item {
+        display: grid;
+        grid-template-columns: 2.5rem 1fr;
+        gap: 1.2rem;
+        padding: 1.6rem 0;
+        border-top: 1px solid var(--linha);
+        align-items: start;
+      }
+
+      .confianca-lista > .confianca-item:last-child {
+        border-bottom: 1px solid var(--linha);
+      }
+
+      .confianca-item svg {
+        margin-top: 0.2rem;
+      }
+
+      .confianca-item h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+
+      .confianca-item p {
+        color: var(--muted);
+        margin-top: 0.4rem;
+        max-width: 50ch;
+      }
+
+      /* ---------- começando ---------- */
+
+      .comecando-marca {
+        font-size: clamp(1.6rem, 3.4vw, 2.2rem);
+        font-weight: 800;
+        max-width: 20ch;
+      }
+
+      .comecando p.corpo {
+        color: var(--muted);
+        margin-top: 1.3rem;
+        max-width: 56ch;
+        font-size: 1.05rem;
+      }
+
+      .comecando p.corpo + p.corpo { margin-top: 0.9rem; }
 
       /* ---------- rodapé ---------- */
 
       footer {
-        padding: 2.5rem 0 3.5rem;
-        border-top: 1px solid var(--border);
-        color: var(--muted-soft);
+        padding: 2.5rem 0 3rem;
+        color: var(--muted);
         font-size: 0.87rem;
         display: flex;
         flex-wrap: wrap;
@@ -370,198 +415,177 @@
         align-items: center;
       }
 
-      footer a {
-        color: var(--muted);
-      }
+      footer a { color: var(--ink); font-weight: 600; }
     </style>
   </head>
 
   <body>
-    <div class="wrap">
-      <header>
-        <div class="marca">
-          <span class="marca-icone" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#009E86" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 10.5 12 3l9 7.5" />
-              <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
-            </svg>
-          </span>
-          <span class="marca-nome">Contigo Saúde</span>
-        </div>
-      </header>
+    <div class="cx topo">
+      <div class="marca">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#009E86" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 10.5 12 3l9 7.5" />
+          <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
+        </svg>
+        Contigo Saúde
+      </div>
+      <a class="entrar" href="./app.html">Entrar</a>
+    </div>
 
-      <div class="heroi">
-        <h1>Fisioterapia que vai até você</h1>
-        <p class="linha-fina">
-          Diga seu CEP e encontramos fisioterapeutas que atendem na sua região.
-          Sem taxa para o paciente.
-        </p>
-        <div class="acoes">
-          <a class="botao botao-principal" href="./app.html?papel=paciente">
-            Preciso de atendimento
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M5 12h14M13 6l6 6-6 6" />
-            </svg>
-          </a>
-          <a class="botao botao-secundario" href="./app.html?papel=fisio">
-            Sou fisioterapeuta
-          </a>
+    <div class="heroi">
+      <svg class="forma forma-1" viewBox="0 0 400 400" aria-hidden="true">
+        <path fill="#009E86" d="M136 26C210-6 305 22 344 92c39 70 24 158-38 206-62 48-160 46-216-8C34 236 16 152 52 96 76 58 104 40 136 26Z" opacity="0.16"/>
+      </svg>
+      <svg class="forma forma-2" viewBox="0 0 100 100" aria-hidden="true">
+        <path fill="#10201B" d="M50 4c25 0 46 21 46 46s-21 46-46 46S4 75 4 50 25 4 50 4Z" opacity="0.85"/>
+      </svg>
+
+      <div class="cx heroi-grade">
+        <div>
+          <h1>Fisio&shy;terapia que vai <em>até você</em></h1>
+          <div class="acoes">
+            <a class="botao botao-principal" href="./app.html?papel=paciente">
+              Preciso de atendimento
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </a>
+            <a class="botao botao-secundario" href="./app.html?papel=fisio">
+              Sou fisioterapeuta
+            </a>
+          </div>
+          <div id="contador-fisios" class="contador" style="display: none">
+            <span class="ponto" aria-hidden="true"></span>
+            <span id="contador-fisios-texto"></span>
+          </div>
         </div>
-        <div id="contador-fisios" class="contador" style="display: none">
-          <span class="ponto" aria-hidden="true"></span>
-          <span id="contador-fisios-texto"></span>
+        <div class="heroi-lateral">
+          <p class="linha-fina">
+            Diga seu CEP. A gente cruza com quem atende sua região — e você combina tudo direto no WhatsApp, sem taxa nenhuma.
+          </p>
         </div>
       </div>
+    </div>
 
-      <!--
-        VÍDEO EXPLICATIVO
-        Quando você gravar o vídeo, suba no YouTube como "não listado" e troque
-        o ID abaixo pelo do seu vídeo. Depois é só apagar estas duas linhas de
-        comentário para a seção aparecer no site.
+    <!--
+      VÍDEO EXPLICATIVO
+      Quando você gravar o vídeo, suba no YouTube como "não listado" e troque
+      o ID abaixo pelo do seu vídeo, dentro de uma faixa-clara/faixa-interna.
+    -->
 
-      <section>
-        <h2>Como funciona, em 1 minuto</h2>
-        <div style="position:relative;padding-top:56.25%;margin-top:1.5rem;border-radius:.9rem;overflow:hidden;border:1px solid var(--border)">
-          <iframe
-            src="https://www.youtube-nocookie.com/embed/SEU_ID_AQUI"
-            title="Como funciona o Fisio em Casa"
-            style="position:absolute;inset:0;width:100%;height:100%;border:0"
-            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen
-          ></iframe>
-        </div>
-      </section>
-      -->
-
-      <section>
-        <h2>Como funciona</h2>
-        <p class="subtitulo">
-          Três passos, tudo pelo celular. Sem conta, sem instalar nada.
-        </p>
+    <div class="faixa faixa-clara">
+      <div class="cx faixa-interna">
+        <span class="rotulo">Como funciona</span>
+        <h2>Três passos, sem instalar nada</h2>
         <ol class="passos">
           <li class="passo">
-            <h3>Conte o que precisa</h3>
-            <p>
-              Informe seu CEP, o tipo de atendimento e quando precisa. Leva menos de um minuto.
-            </p>
+            <span class="passo-num" aria-hidden="true">01</span>
+            <div>
+              <h3>Conte o que precisa</h3>
+              <p>Informe seu CEP, o tipo de atendimento e quando precisa. Menos de um minuto.</p>
+            </div>
           </li>
           <li class="passo">
-            <h3>A gente encontra quem está perto</h3>
-            <p>
-              Cruzamos sua localização com a área de atendimento de cada profissional e calculamos a
-              distância real.
-            </p>
+            <span class="passo-num" aria-hidden="true">02</span>
+            <div>
+              <h3>A gente encontra quem está perto</h3>
+              <p>Cruzamos sua localização com a área de cada profissional e calculamos a distância real.</p>
+            </div>
           </li>
           <li class="passo">
-            <h3>Combine o horário</h3>
-            <p>
-              Você escolhe o profissional que quiser da lista e fala direto com ele pelo WhatsApp —
-              sem intermediário, sem espera.
-            </p>
+            <span class="passo-num" aria-hidden="true">03</span>
+            <div>
+              <h3>Combine o horário</h3>
+              <p>Você escolhe quem quiser da lista e fala direto pelo WhatsApp — sem intermediário.</p>
+            </div>
           </li>
         </ol>
-      </section>
+      </div>
+    </div>
 
-      <section>
-        <h2>Para profissionais de saúde</h2>
-        <p class="subtitulo">
-          Se você atende a domicílio (fisioterapia, fonoaudiologia, terapia ocupacional ou similar), o cadastro é gratuito e leva dois minutos.
+    <div class="faixa faixa-escura">
+      <div class="cx faixa-interna">
+        <span class="rotulo">Para profissionais de saúde</span>
+        <h2>Pedidos da sua região, não de qualquer lugar</h2>
+        <p class="faixa-legenda">
+          Fisioterapia, fonoaudiologia, terapia ocupacional ou similar — se você atende a domicílio, o cadastro é grátis e leva dois minutos.
         </p>
-        <div class="destaque">
-          <h3>Você recebe pedidos da sua região, não de qualquer lugar</h3>
-          <p>
-            Cadastre seu CEP de partida e diga até quantos quilômetros aceita se deslocar. Só chegam
-            pedidos dentro desse raio.
-          </p>
-          <ul class="lista-limpa">
+        <div class="prof-grade">
+          <ul class="prof-lista">
             <li>
-              <span class="marcador" aria-hidden="true">✓</span>
-              <span>Você define suas especialidades, sua área e o valor da sua sessão</span>
+              <span class="n" aria-hidden="true">→</span>
+              <p><strong>Você define o raio.</strong> Cadastra seu CEP de partida e diz até quantos km aceita se deslocar.</p>
             </li>
             <li>
-              <span class="marcador" aria-hidden="true">✓</span>
-              <span>Você decide quais pedidos aceitar, direto pelo seu painel</span>
+              <span class="n" aria-hidden="true">→</span>
+              <p><strong>Você define o preço.</strong> Suas especialidades, sua área, o valor da sua sessão.</p>
+            </li>
+            <li>
+              <span class="n" aria-hidden="true">→</span>
+              <p><strong>Você decide o que aceitar.</strong> Direto pelo seu painel, pedido por pedido.</p>
             </li>
           </ul>
+          <div>
+            <div class="acoes" style="margin-top: 0">
+              <a class="botao" style="background: var(--accent); color: #003b32;" href="./app.html?papel=fisio">
+                Quero me cadastrar
+              </a>
+            </div>
+          </div>
         </div>
-        <div class="acoes">
-          <a class="botao botao-principal" href="./app.html?papel=fisio">
-            Quero me cadastrar
-          </a>
-        </div>
-      </section>
+      </div>
+    </div>
 
-      <section>
-        <h2>Segurança e confiança</h2>
-        <p class="subtitulo">
-          Trabalhamos com dados de saúde. Isso pede cuidado redobrado — é assim que tratamos.
-        </p>
-        <div class="selos">
-          <div class="selo">
-            <span class="selo-icone" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#009E86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
-              </svg>
-            </span>
+    <div class="faixa faixa-papel">
+      <div class="cx faixa-interna">
+        <span class="rotulo">Segurança e confiança</span>
+        <h2>Dado de saúde pede cuidado redobrado</h2>
+        <div class="confianca-lista">
+          <div class="confianca-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#009E86" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+            </svg>
             <div>
               <h3>Conformidade com a LGPD</h3>
-              <p>
-                Coletamos só o necessário para o atendimento acontecer. Você pode pedir a
-                exclusão dos seus dados a qualquer momento.
-              </p>
+              <p>Coletamos só o necessário para o atendimento acontecer. Você pode pedir a exclusão dos seus dados quando quiser.</p>
             </div>
           </div>
-          <div class="selo">
-            <span class="selo-icone" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#009E86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 12l2 2 4-4" />
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
-              </svg>
-            </span>
+          <div class="confianca-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#009E86" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 12l2 2 4-4" />
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+            </svg>
             <div>
               <h3>CREFITO informado no cadastro</h3>
-              <p>
-                Todo fisioterapeuta informa o número de registro profissional para se cadastrar.
-                Ainda não validamos automaticamente contra o conselho — por isso, confirme o
-                registro do profissional antes do atendimento.
-              </p>
+              <p>Todo fisioterapeuta declara o número de registro. Ainda não validamos automaticamente contra o conselho — confirme antes do atendimento.</p>
             </div>
           </div>
-          <div class="selo">
-            <span class="selo-icone" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#009E86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M3 12s3-7 9-7 9 7 9 7-3 7-9 7-9-7-9-7Z" />
-              </svg>
-            </span>
+          <div class="confianca-item">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#009E86" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M3 12s3-7 9-7 9 7 9 7-3 7-9 7-9-7-9-7Z" />
+            </svg>
             <div>
               <h3>Seu telefone fica protegido</h3>
-              <p>
-                Seu WhatsApp só aparece pro profissional que confirmar seu atendimento — antes
-                disso, nenhum fisioterapeuta vê seu contato.
-              </p>
+              <p>Seu WhatsApp só aparece pro profissional que confirmar o atendimento — antes disso, ninguém vê seu contato.</p>
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </div>
 
-      <section>
-        <h2>Estamos começando</h2>
-        <div class="aviso-honesto">
-          <p>
-            <strong>Contigo Saúde acabou de nascer.</strong> Estamos montando a rede de
-            profissionais agora, região por região. Por enquanto começamos com fisioterapia,
-            mas em breve teremos fonoaudiologia, terapia ocupacional e outras especialidades.
-          </p>
-          <p style="margin-top: 0.9rem">
-            Isso significa que pode não haver ainda alguém cadastrado no seu bairro — mas todo
-            pedido fica registrado, e assim que um profissional passar a atender a sua área,
-            a gente te procura. Se você é profissional de saúde e chegou até aqui, é um bom
-            momento para entrar: quem se cadastra agora recebe os primeiros pedidos da região.
-          </p>
-        </div>
-      </section>
+    <div class="faixa faixa-clara comecando">
+      <div class="cx faixa-interna" style="padding-bottom: 3rem;">
+        <p class="comecando-marca">Contigo Saúde acabou de nascer.</p>
+        <p class="corpo">
+          Estamos montando a rede de profissionais agora, região por região. Começamos com fisioterapia — fonoaudiologia, terapia ocupacional e outras especialidades vêm em seguida.
+        </p>
+        <p class="corpo">
+          Pode não haver ainda alguém no seu bairro, mas todo pedido fica registrado: assim que um profissional passar a atender sua área, a gente te procura. E se você é profissional de saúde, quem se cadastra agora recebe os primeiros pedidos da região.
+        </p>
+      </div>
+    </div>
 
+    <div class="cx">
       <footer>
         <span>Contigo Saúde · saúde domiciliar</span>
         <span><a href="./app.html">Acessar o aplicativo</a></span>
