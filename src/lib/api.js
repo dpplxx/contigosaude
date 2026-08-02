@@ -115,6 +115,18 @@ export function marcarStatusAgendamento({ agendamentoId, status }) {
   });
 }
 
+// O fisio fecha um atendimento sozinho, a partir de um pedido compatível
+// que ele já está vendo no painel — sem precisar de ninguém confirmando
+// por fora. Devolve o nome e o WhatsApp do paciente, liberados só agora
+// que o fisio assumiu o atendimento.
+export function fecharAgendamento({ pedidoId, data, horario }) {
+  return rpc("hc_fechar_agendamento", {
+    p_pedido_id: pedidoId,
+    p_data: data,
+    p_horario: horario,
+  });
+}
+
 export function avaliar({ fisioId, nota, comentario }) {
   return rpc("hc_avaliar", {
     p_fisio_id: fisioId,

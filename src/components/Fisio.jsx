@@ -17,7 +17,6 @@ import {
   PrimaryButton,
   SelectInput,
   StarRow,
-  Tag,
   TagInput,
   TextArea,
   TextInput,
@@ -29,6 +28,7 @@ import { formatarDistancia } from "../lib/geo";
 import {
   cadastrarFisio,
   enviarFotoFisio,
+  fecharAgendamento,
   marcarStatusAgendamento,
   meuPainelFisio,
 } from "../lib/api";
@@ -432,6 +432,129 @@ export function PhysioForm({ onToast }) {
   );
 }
 
+function PedidoCompativelCard({ pedido, onFechado }) {
+  const [aberto, setAberto] = useState(false);
+  const [data, setData] = useState("");
+  const [horario, setHorario] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
+  const [resultado, setResultado] = useState(null);
+
+  const fechar = async (e) => {
+    e.preventDefault();
+    if (!data || !horario) return;
+    setEnviando(true);
+    setErro("");
+    try {
+      const r = await fecharAgendamento({ pedidoId: pedido.id, data, horario });
+      setResultado(r);
+      onFechado?.();
+    } catch (e) {
+      setErro(mensagemDeErro(e, "Não foi possível fechar esse atendimento."));
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  if (resultado) {
+    return (
+      <div
+        className="rounded-lg p-3"
+        style={{ background: "#8FAE8B1F", border: "1px solid #8FAE8B55" }}
+      >
+        <p className="text-sm font-medium" style={{ color: "#8FAE8B" }}>
+          Fechado! Combine os detalhes com {resultado.paciente_nome}:
+        </p>
+        <a
+          href={waLink(
+            resultado.paciente_whatsapp,
+            `Olá ${resultado.paciente_nome}, fechei seu atendimento pelo Contigo Saúde para ${formatDataHora(data, horario)}.`
+          )}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg mt-2"
+          style={{ background: "#25D366", color: "white" }}
+        >
+          <Phone size={12} /> WhatsApp
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border rounded-lg p-3" style={{ borderColor: "var(--border-soft)" }}>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div>
+          <p className="text-sm">
+            {pedido.bairro}
+            {pedido.distancia_km != null && ` · ${formatarDistancia(pedido.distancia_km)}`} ·{" "}
+            {pedido.especialidade}
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--muted2)" }}>
+            {pedido.urgencia} · {tempoRelativo(pedido.criado_em)}
+          </p>
+        </div>
+        {!aberto && (
+          <button
+            type="button"
+            onClick={() => setAberto(true)}
+            className="text-xs px-3 py-1.5 rounded-lg shrink-0"
+            style={{ background: "#C6693D", color: "#14231F" }}
+          >
+            Fechei esse atendimento
+          </button>
+        )}
+      </div>
+
+      {aberto && (
+        <form onSubmit={fechar} className="flex flex-wrap items-end gap-2 mt-3">
+          <div>
+            <label className="text-xs block mb-1" style={{ color: "var(--muted2)" }}>
+              Data
+            </label>
+            <TextInput
+              type="date"
+              value={data}
+              onChange={(e) => setData(e.target.value)}
+              required
+              style={{ width: 150 }}
+            />
+          </div>
+          <div>
+            <label className="text-xs block mb-1" style={{ color: "var(--muted2)" }}>
+              Horário
+            </label>
+            <TextInput
+              type="time"
+              value={horario}
+              onChange={(e) => setHorario(e.target.value)}
+              required
+              style={{ width: 110 }}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={enviando}
+            className="text-xs px-3 py-2.5 rounded-lg disabled:opacity-50"
+            style={{ background: "#C6693D", color: "#14231F" }}
+          >
+            {enviando ? "Confirmando..." : "Confirmar"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setAberto(false)}
+            className="text-xs px-2 py-2.5"
+            style={{ color: "var(--muted1)" }}
+          >
+            Cancelar
+          </button>
+        </form>
+      )}
+      <ErroInline>{erro}</ErroInline>
+    </div>
+  );
+}
+
 export function PhysioDashboard({ onNotify }) {
   const [dados, setDados] = useState({ fisio: null });
   const [loading, setLoading] = useState(false);
@@ -555,23 +678,20 @@ export function PhysioDashboard({ onNotify }) {
 
       {compativeis.length > 0 && (
         <Card>
-          <p className="text-sm font-medium flex items-center gap-1.5" style={{ color: "#E3A873" }}>
+          <p className="text-sm font-medium flex items-center gap-1.5 mb-3" style={{ color: "#E3A873" }}>
             <Sparkles size={14} />
             {compativeis.length === 1
               ? "1 pedido compatível com você aguardando"
               : `${compativeis.length} pedidos compatíveis com você aguardando`}
           </p>
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="space-y-2">
             {compativeis.slice(0, 6).map((p) => (
-              <Tag key={p.id}>
-                {p.bairro}
-                {p.distancia_km != null && ` · ${formatarDistancia(p.distancia_km)}`} ·{" "}
-                {p.especialidade}
-              </Tag>
+              <PedidoCompativelCard key={p.id} pedido={p} onFechado={carregar} />
             ))}
           </div>
-          <p className="text-xs mt-2" style={{ color: "var(--muted2)" }}>
-            A equipe do Fisio em Casa vai entrar em contato pra confirmar o agendamento.
+          <p className="text-xs mt-3" style={{ color: "var(--muted2)" }}>
+            Ao fechar, o contato do paciente é liberado só pra você — combine os detalhes direto
+            pelo WhatsApp.
           </p>
         </Card>
       )}
@@ -579,8 +699,8 @@ export function PhysioDashboard({ onNotify }) {
       {agendamentos.length === 0 && (
         <Card>
           <p className="text-sm" style={{ color: "var(--muted1)" }}>
-            Nenhum agendamento ainda. Assim que a equipe do Fisio em Casa marcar um atendimento pra
-            você, ele aparece aqui.
+            Nenhum agendamento ainda. Assim que você fechar um atendimento na lista de pedidos
+            compatíveis acima, ele aparece aqui.
           </p>
         </Card>
       )}

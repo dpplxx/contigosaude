@@ -78,7 +78,7 @@ export function CepInput({ valor, onChange, onResolvido, ajuda, label }) {
       {status === "ok" && (
         <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: "#8FAE8B" }}>
           <MapPin size={12} /> Endereço localizado.{" "}
-          {ajuda || "Usamos isso só para calcular a distância — o endereço exato não aparece para ninguém além da equipe."}
+          {ajuda || "Usamos isso só para calcular a distância — o endereço exato não aparece publicamente."}
         </p>
       )}
       {status === "semCoordenada" && (

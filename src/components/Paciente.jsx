@@ -1,37 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Heart,
-  MapPin,
-  Phone,
-  RefreshCw,
-  Star,
-} from "lucide-react";
-import {
-  Card,
-  ErroInline,
-  Field,
-  InnerRow,
-  PhoneInput,
-  PrimaryButton,
-  SelectInput,
-  Tag,
-  TextArea,
-  TextInput,
-} from "./ui";
-import { AgendamentoInfo, CepInput, ChatThread } from "./Compartilhados";
-import { EthicalCheckbox, PrototypeWarning } from "./Ethics";
+import { Heart, MapPin, Phone, RefreshCw, Star } from "lucide-react";
+import { Card, ErroInline, InnerRow, Tag, TextArea } from "./ui";
+import { AgendamentoInfo, ChatThread } from "./Compartilhados";
+import { PrototypeWarning } from "./Ethics";
 import { BuscaFisios } from "./BuscaFisios";
 import { formatarDistancia } from "../lib/geo";
-import { avaliar, criarPedido, meusPedidos, registrarClique } from "../lib/api";
-import {
-  ESPECIALIDADES_PACIENTE,
-  URGENCIAS,
-  mensagemDeErro,
-  waLink,
-} from "../lib/utils";
-import { POLITICA_PRIVACIDADE, TERMOS_DE_USO } from "../lib/termos";
+import { avaliar, meusPedidos, registrarClique } from "../lib/api";
+import { mensagemDeErro, waLink } from "../lib/utils";
 
 const FAVORITOS_KEY = "fisio-em-casa:favoritos";
 
@@ -50,56 +25,6 @@ function gravarFavoritos(lista) {
   } catch {
     // Navegador em modo privado pode bloquear; favoritar é opcional.
   }
-}
-
-const REQUEST_INITIAL = {
-  nome: "",
-  whatsapp: "",
-  especialidade: ESPECIALIDADES_PACIENTE[0],
-  cep: "",
-  cidade: "",
-  bairro: "",
-  uf: "",
-  lat: null,
-  lng: null,
-  urgencia: URGENCIAS[0],
-  observacoes: "",
-  concordaTermos: false,
-  concordaCompartilhamento: false,
-};
-
-function PedidoEnviado({ fisiosProximos, onNovoPedido }) {
-  return (
-    <Card>
-      <div className="flex items-center gap-2 mb-2">
-        <CheckCircle2 size={20} style={{ color: "#8FAE8B" }} />
-        <h2 className="text-lg font-medium">Pedido enviado!</h2>
-      </div>
-      {fisiosProximos > 0 ? (
-        <p className="text-sm" style={{ color: "var(--muted1)" }}>
-          {fisiosProximos === 1
-            ? "1 fisioterapeuta atende a sua região."
-            : `${fisiosProximos} fisioterapeutas atendem a sua região.`}{" "}
-          A equipe vai entrar em contato pelo WhatsApp para confirmar o horário.
-        </p>
-      ) : (
-        <p className="text-sm" style={{ color: "var(--muted1)" }}>
-          Ainda não temos um profissional cadastrado na sua região, mas seu pedido ficou registrado.
-          Assim que alguém atender a sua área, a equipe entra em contato.
-        </p>
-      )}
-      <p className="text-sm mt-3" style={{ color: "var(--muted2)" }}>
-        Você pode acompanhar o andamento na aba "Acompanhar meu pedido".
-      </p>
-      <button
-        onClick={onNovoPedido}
-        className="text-sm underline mt-4"
-        style={{ color: "#E3A873" }}
-      >
-        Fazer outro pedido
-      </button>
-    </Card>
-  );
 }
 
 export function RequestForm({ onToast }) {
