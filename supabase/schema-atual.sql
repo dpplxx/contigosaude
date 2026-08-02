@@ -218,6 +218,23 @@ alter table public.admins enable row level security;
 -- Nenhuma política: a tabela só é lida pela função hc_e_admin() abaixo,
 -- nunca pelo navegador.
 
+-- Definida aqui, logo depois de "admins" e antes de qualquer policy ou
+-- seção que dependa dela (auditoria, RLS das tabelas principais) — mover
+-- pra "HELPERS" mais abaixo quebra a ordem de criação: SQL processa o
+-- arquivo de cima pra baixo, então uma policy não pode chamar uma função
+-- que ainda não existe.
+create or replace function public.hc_e_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select exists (select 1 from admins where user_id = auth.uid());
+$$;
+
+grant execute on function public.hc_e_admin() to authenticated;
+
 -- ============================================================================
 -- AUDITORIA — log de quem fez o quê e quando
 -- ============================================================================
@@ -407,19 +424,10 @@ drop function if exists public.hc_meus_pedidos_auth();
 
 -- ============================================================================
 -- HELPERS
+--
+-- hc_e_admin() já foi definida lá em cima, logo depois da tabela "admins"
+-- (é usada por policies que vêm antes desta seção no arquivo).
 -- ============================================================================
-
-create or replace function public.hc_e_admin()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public, pg_temp
-as $$
-  select exists (select 1 from admins where user_id = auth.uid());
-$$;
-
-grant execute on function public.hc_e_admin() to authenticated;
 
 -- Normaliza um telefone digitado de qualquer jeito para a mesma chave de 8
 -- dígitos usada nas colunas geradas.
