@@ -53,6 +53,17 @@ function papelInicial() {
   }
 }
 
+// Link de perfil compartilhado (?fisio=UUID) precisa abrir direto pro
+// visitante anônimo — exigir login antes derrubaria o propósito inteiro de
+// compartilhar (a pessoa que recebe o link não tem conta nenhuma).
+function temFisioNaUrl() {
+  try {
+    return Boolean(new URLSearchParams(window.location.search).get("fisio"));
+  } catch {
+    return false;
+  }
+}
+
 function Header({ tema, onToggleTema, onAtivarNotificacoes, sessao, onSair }) {
   return (
     <header className="max-w-3xl mx-auto px-4 sm:px-6 pt-10 pb-6 relative">
@@ -126,6 +137,7 @@ function AvisoSemChaves() {
 
 export default function App() {
   const [role, setRole] = useState(papelInicial);
+  const [fisioNaUrl] = useState(temFisioNaUrl);
   const [pacienteView, setPacienteView] = useState("pedido");
   const [fisioView, setFisioView] = useState("cadastro");
   const [tema, setTema] = useState("claro");
@@ -327,10 +339,10 @@ export default function App() {
       <main className="max-w-3xl mx-auto px-4 sm:px-6 pb-16 space-y-4">
         {!supabaseConfigurado && <AvisoSemChaves />}
 
-        {role === "paciente" && !sessao && (
+        {role === "paciente" && !sessao && !fisioNaUrl && (
           <AuthEmail tipo="paciente" onAutenticado={() => addToast("Bem-vinda!")} />
         )}
-        {role === "paciente" && sessao && pacienteView === "pedido" && (
+        {role === "paciente" && (sessao || fisioNaUrl) && pacienteView === "pedido" && (
           <RequestForm onToast={addToast} />
         )}
         {role === "paciente" && sessao && pacienteView === "acompanhar" && (

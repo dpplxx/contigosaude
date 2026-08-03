@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MapPin, Phone, MessageCircle, Loader, ShieldCheck, Star, ChevronDown, ChevronUp, Flag, Share2, Check } from "lucide-react";
 import { Card, Field, TextInput, SelectInput, PrimaryButton, StarRow } from "./ui";
 import { CepInput } from "./Compartilhados";
@@ -44,6 +44,14 @@ function cidadeInicialDaUrl() {
   }
 }
 
+function fisioInicialDaUrl() {
+  try {
+    return new URLSearchParams(window.location.search).get("fisio") || "";
+  } catch {
+    return "";
+  }
+}
+
 export function BuscaFisios() {
   const [form, setForm] = useState(() => ({
     ...BUSCA_INITIAL,
@@ -52,6 +60,8 @@ export function BuscaFisios() {
   const [fisios, setFisios] = useState(null);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
+  const [fisioCompartilhado, setFisioCompartilhado] = useState(null);
+  const [carregandoPerfil, setCarregandoPerfil] = useState(false);
   // Honeypot: campo escondido de humano nenhum, mas visível pra bot que
   // preenche todo input do formulário. Filtra os robôs mais simples sem
   // depender de captcha pago e sem falso positivo em quem usa autofill
@@ -59,6 +69,54 @@ export function BuscaFisios() {
   // não bastar, dá pra reforçar no backend.
   const [site, setSite] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
+
+  useEffect(() => {
+    const fisioId = fisioInicialDaUrl();
+
+    if (!fisioId) return;
+
+    let ativo = true;
+
+    const carregarPerfil = async () => {
+      setCarregandoPerfil(true);
+      setErro("");
+
+      try {
+        const { data, error } = await supabase.rpc("hc_obter_fisio_publico", {
+          p_fisio_id: fisioId,
+        });
+
+        if (error) throw error;
+
+        if (!data) {
+          throw new Error("Profissional não encontrado.");
+        }
+
+        if (ativo) {
+          setFisioCompartilhado(data);
+        }
+
+        trackEvent(Events.PROFILE_OPENED, {
+          fisio_id: fisioId,
+          origem: "link_compartilhado",
+        });
+      } catch (e) {
+        if (ativo) {
+          setErro(mensagemDeErro(e, "Não foi possível carregar o perfil do profissional."));
+        }
+      } finally {
+        if (ativo) {
+          setCarregandoPerfil(false);
+        }
+      }
+    };
+
+    carregarPerfil();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -156,6 +214,41 @@ export function BuscaFisios() {
       setLoading(false);
     }
   };
+
+  if (fisioInicialDaUrl()) {
+    if (carregandoPerfil) {
+      return (
+        <Card>
+          <div className="flex items-center gap-2">
+            <Loader size={18} className="animate-spin" />
+            Carregando perfil...
+          </div>
+        </Card>
+      );
+    }
+
+    if (erro) {
+      return (
+        <Card>
+          <div className="text-sm" style={{ color: "#C24A3E" }}>
+            {erro}
+          </div>
+        </Card>
+      );
+    }
+
+    if (fisioCompartilhado) {
+      return (
+        <PerfilCompartilhado
+          fisio={fisioCompartilhado}
+          onVoltar={() => {
+            window.history.replaceState({}, "", window.location.pathname);
+            setFisioCompartilhado(null);
+          }}
+        />
+      );
+    }
+  }
 
   if (fisios !== null) {
     return <ListaFisios fisios={fisios} onVoltar={() => setFisios(null)} />;
@@ -445,16 +538,15 @@ function CartaFisio({ fisio }) {
   const handleProfileClick = () => {
     trackEvent(Events.PROFILE_OPENED, {
       fisio_id: fisio.id,
-      fisio_nome: fisio.nome,
     });
   };
 
   const handleShare = async (e) => {
     e.stopPropagation();
-    trackEvent(Events.PROFILE_SHARED, { fisio_id: fisio.id, fisio_nome: fisio.nome });
+    trackEvent(Events.PROFILE_SHARED, { fisio_id: fisio.id });
 
     const texto = `${fisio.nome} — fisioterapeuta${fisio.bairro ? ` em ${fisio.bairro}` : ""}. Encontrei no Contigo Saúde:`;
-    const url = window.location.origin;
+    const url = `${window.location.origin}${window.location.pathname}?fisio=${encodeURIComponent(fisio.id)}`;
 
     try {
       if (navigator.share) {
@@ -584,6 +676,126 @@ function CartaFisio({ fisio }) {
           {copiado ? "Copiado!" : "Compartilhar"}
         </button>
       </div>
+    </div>
+  );
+}
+
+function PerfilCompartilhado({ fisio, onVoltar }) {
+  const handleWhatsAppClick = () => {
+    trackEvent(Events.WHATSAPP_CLICKED, {
+      fisio_id: fisio.id,
+      origem: "perfil_compartilhado",
+    });
+
+    registrarEventoMarketplace({
+      tipo: "whatsapp_clique",
+      fisioId: fisio.id,
+    }).catch(() => {});
+  };
+
+  return (
+    <div className="space-y-4">
+      <button onClick={onVoltar} className="text-sm underline" style={{ color: "#16C4A8" }}>
+        ← Voltar para busca
+      </button>
+
+      <Card>
+        <div className="flex flex-col items-center text-center">
+          {fisio.foto_url ? (
+            <img
+              src={fisio.foto_url}
+              alt={fisio.nome}
+              className="w-28 h-28 rounded-full object-cover"
+            />
+          ) : (
+            <div
+              className="w-28 h-28 rounded-full flex items-center justify-center"
+              style={{ background: "var(--card)" }}
+            >
+              <Phone size={42} style={{ color: "var(--muted)" }} />
+            </div>
+          )}
+
+          <h1 className="text-2xl font-semibold mt-4">{fisio.nome}</h1>
+
+          {fisio.formacao && (
+            <p className="text-sm mt-1" style={{ color: "var(--muted1)" }}>
+              {fisio.formacao}
+            </p>
+          )}
+
+          {fisio.bairro && (
+            <div className="flex items-center gap-1 text-sm mt-3" style={{ color: "var(--muted1)" }}>
+              <MapPin size={15} />
+              {fisio.bairro}
+              {fisio.cidade ? `, ${fisio.cidade}` : ""}
+              {fisio.uf ? ` - ${fisio.uf}` : ""}
+            </div>
+          )}
+
+          {fisio.crefito && (
+            <div className="mt-3">
+              {fisio.crefito_status === "verificado" ? (
+                <span className="flex items-center gap-1 text-sm" style={{ color: "#2FAE72" }}>
+                  <ShieldCheck size={15} />
+                  CREFITO verificado{fisio.crefito_uf ? ` (${fisio.crefito_uf})` : ""}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-sm" style={{ color: "var(--muted1)" }}>
+                  <ShieldCheck size={15} />
+                  CREFITO informado
+                </span>
+              )}
+            </div>
+          )}
+
+          {fisio.total_avaliacoes > 0 && (
+            <div className="flex items-center gap-2 mt-4">
+              <Star size={18} fill="#16C4A8" style={{ color: "#16C4A8" }} />
+              <strong>{fisio.nota_media}</strong>
+              <span className="text-sm" style={{ color: "var(--muted1)" }}>
+                ({fisio.total_avaliacoes} {fisio.total_avaliacoes === 1 ? "avaliação" : "avaliações"})
+              </span>
+            </div>
+          )}
+
+          {fisio.especialidades?.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-2 mt-5">
+              {fisio.especialidades.map((esp) => (
+                <span
+                  key={esp}
+                  className="text-xs px-3 py-1.5 rounded-full"
+                  style={{ background: "#009E8622", color: "#007F6C" }}
+                >
+                  {esp}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <a
+            href={waLink(
+              fisio.whatsapp,
+              "Oi, encontrei seu perfil no Contigo Saúde. Gostaria de saber mais sobre o atendimento."
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleWhatsAppClick}
+            className="flex items-center justify-center gap-2 w-full mt-6 px-4 py-3 rounded-lg font-medium"
+            style={{ background: "#25D366", color: "white" }}
+          >
+            <MessageCircle size={18} />
+            Falar com {fisio.nome.split(" ")[0]} pelo WhatsApp
+          </a>
+        </div>
+      </Card>
+
+      {fisio.total_avaliacoes > 0 && (
+        <Card>
+          <h2 className="font-medium mb-3">Avaliações</h2>
+          <AvaliacoesFisio fisioId={fisio.id} />
+        </Card>
+      )}
     </div>
   );
 }
