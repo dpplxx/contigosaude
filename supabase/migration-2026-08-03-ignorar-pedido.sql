@@ -1,4 +1,11 @@
 -- ============================================================================
+-- REVERTIDA no mesmo dia por migration-2026-08-03-remover-pedidos-compativeis.sql:
+-- a seção inteira de "pedidos compatíveis" foi removida do painel do fisio
+-- (o funil que a alimentava — hc_criar_pedido — nunca teve tela chamando
+-- ele). Fica só como registro histórico.
+-- ============================================================================
+
+-- ============================================================================
 -- Migração: fisio pode excluir (ignorar) um pedido compatível da lista dele
 --
 -- O painel do fisio mostra "pedidos compatíveis" calculados na hora por

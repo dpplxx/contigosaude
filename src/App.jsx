@@ -3,18 +3,16 @@ import {
   AlertCircle,
   BarChart3,
   Bell,
-  Calendar,
   ClipboardList,
   Home,
   LogOut,
-  MessageCircle,
   Moon,
   Stethoscope,
   Sun,
 } from "lucide-react";
-import { Card, RoleButton, TabButton, ToastContainer } from "./components/ui";
-import { RequestForm, PatientTracking } from "./components/Paciente";
-import { PhysioForm, PhysioDashboard } from "./components/Fisio";
+import { Card, RoleButton, ToastContainer } from "./components/ui";
+import { RequestForm } from "./components/Paciente";
+import { PhysioForm } from "./components/Fisio";
 import { AuthEmail } from "./components/AuthEmail";
 import { Painel } from "./components/Painel";
 import { Login } from "./components/Login";
@@ -138,8 +136,6 @@ function AvisoSemChaves() {
 export default function App() {
   const [role, setRole] = useState(papelInicial);
   const [fisioNaUrl] = useState(temFisioNaUrl);
-  const [pacienteView, setPacienteView] = useState("pedido");
-  const [fisioView, setFisioView] = useState("cadastro");
   const [tema, setTema] = useState("claro");
   const [toasts, setToasts] = useState([]);
   const [sessao, setSessao] = useState(null);
@@ -155,20 +151,6 @@ export default function App() {
     setToasts((t) => [...t, { id, msg, tipo }]);
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3000);
   }, []);
-
-  const notificar = useCallback(
-    (titulo, corpo) => {
-      addToast(titulo);
-      try {
-        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-          new Notification(titulo, { body: corpo });
-        }
-      } catch {
-        // O navegador pode bloquear notificação nativa; o toast já avisa.
-      }
-    },
-    [addToast]
-  );
 
   const pedirPermissaoNotificacao = async () => {
     try {
@@ -308,56 +290,18 @@ export default function App() {
         )}
       </div>
 
-      {role === "paciente" && sessao && (
-        <nav className="max-w-3xl mx-auto px-4 sm:px-6 flex gap-2 pb-4">
-          <TabButton active={pacienteView === "pedido"} onClick={() => setPacienteView("pedido")}>
-            Pedir atendimento
-          </TabButton>
-          <TabButton
-            active={pacienteView === "acompanhar"}
-            onClick={() => setPacienteView("acompanhar")}
-          >
-            <MessageCircle size={14} /> Acompanhar meu pedido
-          </TabButton>
-        </nav>
-      )}
-
-      {role === "fisio" && sessao && (
-        <nav className="max-w-3xl mx-auto px-4 sm:px-6 flex gap-2 pb-4">
-          <TabButton active={fisioView === "cadastro"} onClick={() => setFisioView("cadastro")}>
-            Cadastrar
-          </TabButton>
-          <TabButton
-            active={fisioView === "agendamentos"}
-            onClick={() => setFisioView("agendamentos")}
-          >
-            <Calendar size={14} /> Meus agendamentos
-          </TabButton>
-        </nav>
-      )}
-
       <main className="max-w-3xl mx-auto px-4 sm:px-6 pb-16 space-y-4">
         {!supabaseConfigurado && <AvisoSemChaves />}
 
         {role === "paciente" && !sessao && !fisioNaUrl && (
           <AuthEmail tipo="paciente" onAutenticado={() => addToast("Bem-vinda!")} />
         )}
-        {role === "paciente" && (sessao || fisioNaUrl) && pacienteView === "pedido" && (
-          <RequestForm onToast={addToast} />
-        )}
-        {role === "paciente" && sessao && pacienteView === "acompanhar" && (
-          <PatientTracking onNotify={notificar} />
-        )}
+        {role === "paciente" && (sessao || fisioNaUrl) && <RequestForm />}
 
         {role === "fisio" && !sessao && (
           <AuthEmail tipo="fisio" onAutenticado={() => addToast("Bem-vindo!")} />
         )}
-        {role === "fisio" && sessao && fisioView === "cadastro" && (
-          <PhysioForm onToast={addToast} />
-        )}
-        {role === "fisio" && sessao && fisioView === "agendamentos" && (
-          <PhysioDashboard onNotify={notificar} />
-        )}
+        {role === "fisio" && sessao && <PhysioForm onToast={addToast} />}
 
         {areaRestrita && !sessao && <Login onEntrou={setSessao} />}
         {areaRestrita && sessao && !autorizada && (

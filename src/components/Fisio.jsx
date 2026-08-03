@@ -1,16 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   Camera,
-  Clock,
-  MapPin,
-  Phone,
-  RefreshCw,
   ShieldAlert,
   ShieldCheck,
-  Sparkles,
   User,
-  X,
 } from "lucide-react";
 import {
   Card,
@@ -19,34 +13,15 @@ import {
   PhoneInput,
   PrimaryButton,
   SelectInput,
-  StarRow,
   TagInput,
   TextArea,
   TextInput,
-  Vazio,
 } from "./ui";
-import { CepInput, ChatThread } from "./Compartilhados";
+import { CepInput } from "./Compartilhados";
 import { EthicalCheckbox, PrototypeWarning } from "./Ethics";
-import { formatarDistancia } from "../lib/geo";
-import {
-  cadastrarFisio,
-  enviarFotoFisio,
-  fecharAgendamento,
-  ignorarPedido,
-  marcarStatusAgendamento,
-  meuPainelFisio,
-} from "../lib/api";
+import { cadastrarFisio, enviarFotoFisio, meuPainelFisio } from "../lib/api";
 import { trackEvent, Events } from "../lib/analytics";
-import {
-  ESPECIALIDADES_FISIO,
-  STATUS_AGENDAMENTO,
-  STATUS_LABEL,
-  formatDataHora,
-  mensagemDeErro,
-  pluralAvaliacoes,
-  tempoRelativo,
-  waLink,
-} from "../lib/utils";
+import { ESPECIALIDADES_FISIO, mensagemDeErro } from "../lib/utils";
 import { TurnstileWidget, turnstileConfigurado } from "../lib/turnstile";
 import {
   CODIGO_ETICA_CREFITO,
@@ -94,6 +69,7 @@ export function PhysioForm({ onToast }) {
   const [editando, setEditando] = useState(false);
   const [enviandoFoto, setEnviandoFoto] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [crefitoStatus, setCrefitoStatus] = useState(null);
   const fileInputRef = useRef(null);
 
   // Se a conta já tem cadastro, abre o formulário preenchido em vez de em
@@ -132,6 +108,7 @@ export function PhysioForm({ onToast }) {
           declaracaoEtica: true,
           declaracaoResponsabilidade: true,
         });
+        setCrefitoStatus(f.crefito_status || null);
         setEditando(true);
       })
       .catch(() => {
@@ -259,8 +236,27 @@ export function PhysioForm({ onToast }) {
         <p className="text-sm mb-5" style={{ color: "var(--muted1)" }}>
           {editando
             ? "Altere o que quiser e salve — os pacientes já veem seus dados atualizados."
-            : "Receba pedidos de atendimento domiciliar na sua região."}
+            : "Apareça na busca de pacientes procurando atendimento domiciliar na sua região."}
         </p>
+
+        {editando && crefitoStatus === "verificado" && (
+          <p className="text-sm flex items-center gap-1.5 mb-4" style={{ color: "#2FAE72" }}>
+            <ShieldCheck size={15} /> Seu CREFITO foi verificado pela nossa equipe.
+          </p>
+        )}
+        {editando && crefitoStatus === "rejeitado" && (
+          <p className="text-sm flex items-center gap-1.5 mb-4" style={{ color: "#C24A3E" }}>
+            <ShieldAlert size={15} /> Não conseguimos confirmar seu CREFITO. Confira o número
+            cadastrado ou fale com a gente.
+          </p>
+        )}
+        {editando && !form.lat && (
+          <p className="text-sm mb-4" style={{ color: "#16C4A8" }}>
+            Seu cadastro está sem CEP, então a busca dos pacientes usa só cidade e bairro. Preencha
+            o CEP abaixo e salve para aparecer também por distância real, dentro do seu raio de{" "}
+            {form.raioKm} km.
+          </p>
+        )}
 
         {editando && (
           <div className="flex items-center gap-4 mb-5">
@@ -465,433 +461,6 @@ export function PhysioForm({ onToast }) {
         </PrimaryButton>
       </form>
     </Card>
-    </div>
-  );
-}
-
-function PedidoCompativelCard({ pedido, onFechado, onIgnorado }) {
-  const [aberto, setAberto] = useState(false);
-  const [data, setData] = useState("");
-  const [horario, setHorario] = useState("");
-  const [enviando, setEnviando] = useState(false);
-  const [ignorando, setIgnorando] = useState(false);
-  const [erro, setErro] = useState("");
-  const [resultado, setResultado] = useState(null);
-
-  const fechar = async (e) => {
-    e.preventDefault();
-    if (!data || !horario) return;
-    setEnviando(true);
-    setErro("");
-    try {
-      const r = await fecharAgendamento({ pedidoId: pedido.id, data, horario });
-      setResultado(r);
-      onFechado?.();
-    } catch (e) {
-      setErro(mensagemDeErro(e, "Não foi possível fechar esse atendimento."));
-    } finally {
-      setEnviando(false);
-    }
-  };
-
-  const ignorar = async () => {
-    if (!window.confirm("Tirar este pedido da sua lista? Ele continua disponível para outros fisioterapeutas.")) {
-      return;
-    }
-    setIgnorando(true);
-    setErro("");
-    try {
-      await ignorarPedido({ pedidoId: pedido.id });
-      onIgnorado?.();
-    } catch (e) {
-      setErro(mensagemDeErro(e, "Não foi possível remover esse pedido da lista."));
-      setIgnorando(false);
-    }
-  };
-
-  if (resultado) {
-    return (
-      <div
-        className="rounded-lg p-3"
-        style={{ background: "#2FAE721F", border: "1px solid #2FAE7255" }}
-      >
-        <p className="text-sm font-medium" style={{ color: "#2FAE72" }}>
-          Fechado! Combine os detalhes com {resultado.paciente_nome}:
-        </p>
-        <a
-          href={waLink(
-            resultado.paciente_whatsapp,
-            `Olá ${resultado.paciente_nome}, fechei seu atendimento pelo Contigo Saúde para ${formatDataHora(data, horario)}.`
-          )}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg mt-2"
-          style={{ background: "#25D366", color: "white" }}
-        >
-          <Phone size={12} /> WhatsApp
-        </a>
-      </div>
-    );
-  }
-
-  return (
-    <div className="border rounded-lg p-3" style={{ borderColor: "var(--border-soft)" }}>
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div>
-          <p className="text-sm">
-            {pedido.bairro}
-            {pedido.distancia_km != null && ` · ${formatarDistancia(pedido.distancia_km)}`} ·{" "}
-            {pedido.especialidade}
-          </p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--muted2)" }}>
-            {pedido.urgencia} · {tempoRelativo(pedido.criado_em)}
-          </p>
-        </div>
-        {!aberto && (
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={() => setAberto(true)}
-              className="text-xs px-3 py-1.5 rounded-full"
-              style={{ background: "#009E86", color: "#FFFFFF" }}
-            >
-              Fechei esse atendimento
-            </button>
-            <button
-              type="button"
-              onClick={ignorar}
-              disabled={ignorando}
-              title="Remover da minha lista"
-              aria-label="Remover da minha lista"
-              className="w-7 h-7 flex items-center justify-center rounded-full border disabled:opacity-50"
-              style={{ borderColor: "var(--border-soft)", color: "var(--muted2)" }}
-            >
-              <X size={14} />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {aberto && (
-        <form onSubmit={fechar} className="flex flex-wrap items-end gap-2 mt-3">
-          <div>
-            <label className="text-xs block mb-1" style={{ color: "var(--muted2)" }}>
-              Data
-            </label>
-            <TextInput
-              type="date"
-              value={data}
-              onChange={(e) => setData(e.target.value)}
-              required
-              style={{ width: 150 }}
-            />
-          </div>
-          <div>
-            <label className="text-xs block mb-1" style={{ color: "var(--muted2)" }}>
-              Horário
-            </label>
-            <TextInput
-              type="time"
-              value={horario}
-              onChange={(e) => setHorario(e.target.value)}
-              required
-              style={{ width: 110 }}
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={enviando}
-            className="text-xs px-3 py-2.5 rounded-full disabled:opacity-50"
-            style={{ background: "#009E86", color: "#FFFFFF" }}
-          >
-            {enviando ? "Confirmando..." : "Confirmar"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setAberto(false)}
-            className="text-xs px-2 py-2.5"
-            style={{ color: "var(--muted1)" }}
-          >
-            Cancelar
-          </button>
-        </form>
-      )}
-      <ErroInline>{erro}</ErroInline>
-    </div>
-  );
-}
-
-export function PhysioDashboard({ onNotify }) {
-  const [dados, setDados] = useState({ fisio: null });
-  const [loading, setLoading] = useState(false);
-  const [erro, setErro] = useState("");
-  const primeiraChecagem = useRef(true);
-  const compativeisAnteriores = useRef(new Set());
-
-  const carregar = useCallback(async () => {
-    setLoading(true);
-    setErro("");
-    try {
-      setDados(await meuPainelFisio());
-    } catch (e) {
-      setErro(mensagemDeErro(e, "Não foi possível carregar seus dados."));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    carregar();
-  }, [carregar]);
-
-  // Quem ativou notificações recebe push de verdade quando chega mensagem
-  // nova (trigger no banco → send-push). Isso aqui é só a rede de segurança
-  // pra quem não ativou.
-  useEffect(() => {
-    if (!dados.fisio) return;
-    const intervalo = setInterval(carregar, 120000);
-    return () => clearInterval(intervalo);
-  }, [dados.fisio, carregar]);
-
-  const compativeis = dados.pedidos_compativeis || [];
-
-  useEffect(() => {
-    if (!dados.fisio) return;
-    const idsAtuais = new Set(compativeis.map((r) => r.id));
-    if (primeiraChecagem.current) {
-      primeiraChecagem.current = false;
-      compativeisAnteriores.current = idsAtuais;
-      return;
-    }
-    let novos = 0;
-    idsAtuais.forEach((id) => {
-      if (!compativeisAnteriores.current.has(id)) novos += 1;
-    });
-    if (novos > 0) {
-      onNotify?.(
-        "Novo pedido compatível com você!",
-        novos === 1
-          ? "Há 1 novo pedido na sua região e especialidade."
-          : `Há ${novos} novos pedidos na sua região e especialidade.`
-      );
-    }
-    compativeisAnteriores.current = idsAtuais;
-  }, [compativeis, dados.fisio, onNotify]);
-
-  const marcarStatus = async (agendamentoId, status) => {
-    try {
-      await marcarStatusAgendamento({ agendamentoId, status });
-      await carregar();
-    } catch (e) {
-      setErro(mensagemDeErro(e, "Não foi possível atualizar o agendamento."));
-    }
-  };
-
-  if (loading && !dados.fisio) {
-    return (
-      <Card>
-        <p className="text-sm" style={{ color: "var(--muted1)" }}>
-          Carregando seus dados...
-        </p>
-      </Card>
-    );
-  }
-
-  if (!dados.fisio) {
-    return (
-      <Card>
-        <ErroInline>{erro}</ErroInline>
-        <p className="text-sm" style={{ color: "var(--muted1)" }}>
-          Esta conta ainda não tem um cadastro de fisioterapeuta. Preencha a aba "Cadastrar" para
-          começar a receber pedidos.
-        </p>
-      </Card>
-    );
-  }
-
-  const fisio = dados.fisio;
-  const agendamentos = dados.agendamentos || [];
-  const avaliacoes = dados.avaliacoes || [];
-  const media =
-    avaliacoes.length > 0
-      ? avaliacoes.reduce((s, a) => s + a.nota, 0) / avaliacoes.length
-      : 0;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <p className="text-sm" style={{ color: "var(--muted1)" }}>
-          Olá, {fisio.nome} ·{" "}
-          {agendamentos.length === 1 ? "1 agendamento" : `${agendamentos.length} agendamentos`}
-        </p>
-        <button
-          onClick={carregar}
-          className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border"
-          style={{ borderColor: "var(--border-soft)", color: "var(--muted4)" }}
-        >
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Atualizar
-        </button>
-      </div>
-
-      <ErroInline>{erro}</ErroInline>
-
-      {fisio.crefito_status === "verificado" && (
-        <p className="text-sm flex items-center gap-1.5" style={{ color: "#2FAE72" }}>
-          <ShieldCheck size={15} /> Seu CREFITO foi verificado pela nossa equipe.
-        </p>
-      )}
-      {fisio.crefito_status === "rejeitado" && (
-        <p className="text-sm flex items-center gap-1.5" style={{ color: "#C24A3E" }}>
-          <ShieldAlert size={15} /> Não conseguimos confirmar seu CREFITO. Confira o número
-          cadastrado ou fale com a gente.
-        </p>
-      )}
-
-      {!fisio.tem_coordenadas && (
-        <Card>
-          <p className="text-sm" style={{ color: "#16C4A8" }}>
-            Seu cadastro está sem CEP, então o match usa só cidade e bairro. Cadastre-se de novo com
-            o mesmo WhatsApp informando o CEP — aí você passa a receber pedidos por distância real,
-            dentro do seu raio de {fisio.raio_km} km.
-          </p>
-        </Card>
-      )}
-
-      {compativeis.length > 0 && (
-        <Card>
-          <p className="text-sm font-medium flex items-center gap-1.5 mb-3" style={{ color: "#16C4A8" }}>
-            <Sparkles size={14} />
-            {compativeis.length === 1
-              ? "1 pedido compatível com você aguardando"
-              : `${compativeis.length} pedidos compatíveis com você aguardando`}
-          </p>
-          <div className="space-y-2">
-            {compativeis.slice(0, 6).map((p) => (
-              <PedidoCompativelCard
-                key={p.id}
-                pedido={p}
-                onFechado={carregar}
-                onIgnorado={carregar}
-              />
-            ))}
-          </div>
-          <p className="text-xs mt-3" style={{ color: "var(--muted2)" }}>
-            Ao fechar, o contato do paciente é liberado só pra você — combine os detalhes direto
-            pelo WhatsApp.
-          </p>
-        </Card>
-      )}
-
-      {agendamentos.length === 0 && (
-        <Card>
-          <p className="text-sm" style={{ color: "var(--muted1)" }}>
-            Nenhum agendamento ainda. Assim que você fechar um atendimento na lista de pedidos
-            compatíveis acima, ele aparece aqui.
-          </p>
-        </Card>
-      )}
-
-      {agendamentos.map((a) => {
-        const pedido = a.pedido;
-        return (
-          <Card key={a.id}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="font-medium">{pedido?.nome || "Paciente"}</p>
-                {pedido && (
-                  <p className="text-sm flex items-center gap-1 mt-1" style={{ color: "var(--muted1)" }}>
-                    <MapPin size={13} /> {pedido.bairro}, {pedido.cidade}
-                    {pedido.distancia_km != null && (
-                      <span style={{ color: "#2FAE72" }}>
-                        · {formatarDistancia(pedido.distancia_km)} de você
-                      </span>
-                    )}
-                  </p>
-                )}
-                {pedido?.observacoes && (
-                  <p className="text-sm mt-1" style={{ color: "var(--muted2)" }}>
-                    {pedido.observacoes}
-                  </p>
-                )}
-                <div className="flex flex-wrap items-center gap-3 mt-2">
-                  <span className="text-sm flex items-center gap-1" style={{ color: "var(--muted1)" }}>
-                    <Clock size={13} /> {formatDataHora(a.data, a.horario)}
-                  </span>
-                  {pedido?.whatsapp && (
-                    <a
-                      href={waLink(
-                        pedido.whatsapp,
-                        `Olá ${pedido.nome}, aqui é ${fisio.nome}, do Fisio em Casa.`
-                      )}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full"
-                      style={{ background: "#2FAE7233", color: "#2FAE72", border: "1px solid #2FAE7255" }}
-                    >
-                      <Phone size={12} /> WhatsApp
-                    </a>
-                  )}
-                </div>
-              </div>
-              <SelectInput
-                value={a.status}
-                onChange={(e) => marcarStatus(a.id, e.target.value)}
-                style={{ maxWidth: 140 }}
-              >
-                {STATUS_AGENDAMENTO.map((s) => (
-                  <option key={s} value={s}>
-                    {STATUS_LABEL[s]}
-                  </option>
-                ))}
-              </SelectInput>
-            </div>
-            <ChatThread
-              agendamentoId={a.id}
-              remetente="fisio"
-              remetenteNome={fisio.nome}
-              mensagens={a.mensagens}
-              onSent={carregar}
-            />
-          </Card>
-        );
-      })}
-
-      <section className="pt-2">
-        <h3 className="text-sm uppercase tracking-wide mb-3" style={{ color: "var(--muted1)" }}>
-          Minhas avaliações
-        </h3>
-        <Card>
-          {avaliacoes.length === 0 ? (
-            <Vazio>Você ainda não recebeu nenhuma avaliação.</Vazio>
-          ) : (
-            <>
-              <div className="flex items-center gap-2 mb-3">
-                <StarRow value={media} size={16} />
-                <span className="text-sm" style={{ color: "var(--muted2)" }}>
-                  {media.toFixed(1)} de 5 ({pluralAvaliacoes(avaliacoes.length)})
-                </span>
-              </div>
-              <div className="space-y-3">
-                {avaliacoes.map((a) => (
-                  <div key={a.id} className="pt-3" style={{ borderTop: "1px solid var(--border)" }}>
-                    <div className="flex items-center justify-between gap-2">
-                      <StarRow value={a.nota} />
-                      <span className="text-xs" style={{ color: "var(--muted3)" }}>
-                        {tempoRelativo(a.criado_em)}
-                      </span>
-                    </div>
-                    {a.comentario && (
-                      <p className="text-sm mt-1" style={{ color: "var(--muted4)" }}>
-                        {a.comentario}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </Card>
-      </section>
     </div>
   );
 }

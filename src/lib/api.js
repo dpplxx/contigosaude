@@ -19,22 +19,6 @@ async function rpc(nome, params) {
 // Formulários públicos
 // ---------------------------------------------------------------------------
 
-export function criarPedido(form) {
-  return rpc("hc_criar_pedido", {
-    p_nome: form.nome,
-    p_whatsapp: form.whatsapp,
-    p_especialidade: form.especialidade,
-    p_cidade: form.cidade,
-    p_bairro: form.bairro,
-    p_urgencia: form.urgencia,
-    p_observacoes: form.observacoes || null,
-    p_cep: form.cep || null,
-    p_uf: form.uf || null,
-    p_lat: form.lat ?? null,
-    p_lng: form.lng ?? null,
-  });
-}
-
 export function cadastrarFisio(form) {
   const valor = parseFloat(String(form.valorSessao).replace(",", "."));
   return rpc("hc_cadastrar_fisio", {
@@ -55,16 +39,6 @@ export function cadastrarFisio(form) {
     p_crefito: form.crefito || null,
     p_crefito_uf: form.crefinoUf || null,
   });
-}
-
-// ---------------------------------------------------------------------------
-// Área do paciente — usa a conta logada, não mais o WhatsApp digitado.
-// Veja migration-paciente-auth.sql.
-// ---------------------------------------------------------------------------
-
-export async function meusPedidos() {
-  const data = await rpc("hc_meus_pedidos");
-  return data || [];
 }
 
 // O painel do fisio usa a conta logada, não mais um WhatsApp digitado —
@@ -97,49 +71,6 @@ export async function enviarFotoFisio(arquivo) {
 
   await rpc("hc_atualizar_foto_fisio", { p_foto_url: fotoUrl });
   return fotoUrl;
-}
-
-export function enviarMensagem({ agendamentoId, remetente, remetenteNome, texto }) {
-  return rpc("hc_enviar_mensagem", {
-    p_agendamento_id: agendamentoId,
-    p_remetente: remetente,
-    p_remetente_nome: remetenteNome,
-    p_texto: texto,
-  });
-}
-
-export function marcarStatusAgendamento({ agendamentoId, status }) {
-  return rpc("hc_marcar_status_agendamento", {
-    p_agendamento_id: agendamentoId,
-    p_status: status,
-  });
-}
-
-// O fisio fecha um atendimento sozinho, a partir de um pedido compatível
-// que ele já está vendo no painel — sem precisar de ninguém confirmando
-// por fora. Devolve o nome e o WhatsApp do paciente, liberados só agora
-// que o fisio assumiu o atendimento.
-export function fecharAgendamento({ pedidoId, data, horario }) {
-  return rpc("hc_fechar_agendamento", {
-    p_pedido_id: pedidoId,
-    p_data: data,
-    p_horario: horario,
-  });
-}
-
-// O fisio tira um pedido compatível da própria lista sem fechar o
-// atendimento. Fica só do lado dele: o pedido continua ativo pra qualquer
-// outro fisio compatível — ver migration-2026-08-03-ignorar-pedido.sql.
-export function ignorarPedido({ pedidoId }) {
-  return rpc("hc_ignorar_pedido", { p_pedido_id: pedidoId });
-}
-
-export function avaliar({ fisioId, nota, comentario }) {
-  return rpc("hc_avaliar", {
-    p_fisio_id: fisioId,
-    p_nota: nota,
-    p_comentario: comentario || null,
-  });
 }
 
 export async function registrarClique(fisioId) {

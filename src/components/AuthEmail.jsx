@@ -7,13 +7,13 @@ import { mensagemDeErro } from '../lib/utils'
 const COPY = {
   paciente: {
     titulo: 'Entrar com Email',
-    subtituloLogin: 'Entre para pedir atendimento e acompanhar seus pedidos.',
-    subtituloRegistro: 'Crie sua conta para pedir atendimento e acompanhar tudo em um só lugar.',
+    subtituloLogin: 'Entre para buscar fisioterapeutas perto de você.',
+    subtituloRegistro: 'Crie sua conta para buscar fisioterapeutas perto de você.',
   },
   fisio: {
     titulo: 'Entrar com Email',
-    subtituloLogin: 'Entre para gerenciar seu cadastro e seus agendamentos.',
-    subtituloRegistro: 'Crie sua conta para se cadastrar e receber pedidos da sua região.',
+    subtituloLogin: 'Entre para gerenciar seu cadastro.',
+    subtituloRegistro: 'Crie sua conta para aparecer na busca de pacientes da sua região.',
   },
 }
 
