@@ -127,6 +127,13 @@ export function fecharAgendamento({ pedidoId, data, horario }) {
   });
 }
 
+// O fisio tira um pedido compatível da própria lista sem fechar o
+// atendimento. Fica só do lado dele: o pedido continua ativo pra qualquer
+// outro fisio compatível — ver migration-2026-08-03-ignorar-pedido.sql.
+export function ignorarPedido({ pedidoId }) {
+  return rpc("hc_ignorar_pedido", { p_pedido_id: pedidoId });
+}
+
 export function avaliar({ fisioId, nota, comentario }) {
   return rpc("hc_avaliar", {
     p_fisio_id: fisioId,

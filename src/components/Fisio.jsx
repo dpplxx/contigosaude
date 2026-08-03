@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Sparkles,
   User,
+  X,
 } from "lucide-react";
 import {
   Card,
@@ -31,6 +32,7 @@ import {
   cadastrarFisio,
   enviarFotoFisio,
   fecharAgendamento,
+  ignorarPedido,
   marcarStatusAgendamento,
   meuPainelFisio,
 } from "../lib/api";
@@ -467,11 +469,12 @@ export function PhysioForm({ onToast }) {
   );
 }
 
-function PedidoCompativelCard({ pedido, onFechado }) {
+function PedidoCompativelCard({ pedido, onFechado, onIgnorado }) {
   const [aberto, setAberto] = useState(false);
   const [data, setData] = useState("");
   const [horario, setHorario] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [ignorando, setIgnorando] = useState(false);
   const [erro, setErro] = useState("");
   const [resultado, setResultado] = useState(null);
 
@@ -488,6 +491,21 @@ function PedidoCompativelCard({ pedido, onFechado }) {
       setErro(mensagemDeErro(e, "Não foi possível fechar esse atendimento."));
     } finally {
       setEnviando(false);
+    }
+  };
+
+  const ignorar = async () => {
+    if (!window.confirm("Tirar este pedido da sua lista? Ele continua disponível para outros fisioterapeutas.")) {
+      return;
+    }
+    setIgnorando(true);
+    setErro("");
+    try {
+      await ignorarPedido({ pedidoId: pedido.id });
+      onIgnorado?.();
+    } catch (e) {
+      setErro(mensagemDeErro(e, "Não foi possível remover esse pedido da lista."));
+      setIgnorando(false);
     }
   };
 
@@ -530,14 +548,27 @@ function PedidoCompativelCard({ pedido, onFechado }) {
           </p>
         </div>
         {!aberto && (
-          <button
-            type="button"
-            onClick={() => setAberto(true)}
-            className="text-xs px-3 py-1.5 rounded-full shrink-0"
-            style={{ background: "#009E86", color: "#FFFFFF" }}
-          >
-            Fechei esse atendimento
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setAberto(true)}
+              className="text-xs px-3 py-1.5 rounded-full"
+              style={{ background: "#009E86", color: "#FFFFFF" }}
+            >
+              Fechei esse atendimento
+            </button>
+            <button
+              type="button"
+              onClick={ignorar}
+              disabled={ignorando}
+              title="Remover da minha lista"
+              aria-label="Remover da minha lista"
+              className="w-7 h-7 flex items-center justify-center rounded-full border disabled:opacity-50"
+              style={{ borderColor: "var(--border-soft)", color: "var(--muted2)" }}
+            >
+              <X size={14} />
+            </button>
+          </div>
         )}
       </div>
 
@@ -736,7 +767,12 @@ export function PhysioDashboard({ onNotify }) {
           </p>
           <div className="space-y-2">
             {compativeis.slice(0, 6).map((p) => (
-              <PedidoCompativelCard key={p.id} pedido={p} onFechado={carregar} />
+              <PedidoCompativelCard
+                key={p.id}
+                pedido={p}
+                onFechado={carregar}
+                onIgnorado={carregar}
+              />
             ))}
           </div>
           <p className="text-xs mt-3" style={{ color: "var(--muted2)" }}>
