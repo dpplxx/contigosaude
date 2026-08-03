@@ -29,12 +29,19 @@ O site tem duas páginas:
 
 1. No projeto novo, abra **SQL Editor** no menu lateral
 2. Clique em **New query**
-3. Abra o arquivo [`supabase/schema.sql`](supabase/schema.sql) deste projeto,
-   copie **tudo** e cole no editor
+3. Abra o arquivo [`supabase/schema-atual.sql`](supabase/schema-atual.sql)
+   deste projeto, copie **tudo** e cole no editor
 4. Clique em **Run**
 
 Deve aparecer "Success. No rows returned". Pode rodar de novo quantas vezes
 quiser — o arquivo não apaga nada.
+
+5. Depois do `schema-atual.sql`, rode também cada arquivo
+   `supabase/migration-*.sql` que existir na raiz de `supabase/`, em ordem de
+   data — são mudanças feitas depois que o `schema-atual.sql` foi gerado e
+   ainda não foram dobradas nele. A lista completa, o que cada um faz e por
+   que o projeto funciona em duas camadas (`schema-atual.sql` + migrações
+   soltas) está em [`supabase/README.md`](supabase/README.md).
 
 ## 3. Criar a sua conta de acesso ao Painel
 
@@ -86,8 +93,8 @@ Abra o endereço que aparecer (normalmente `http://localhost:5173`).
 
 > A chave `anon` aparece no código do site — isso é normal e é assim que o
 > Supabase foi feito. Quem protege os dados é o RLS e as funções do
-> `schema.sql`, não o segredo da chave. A `service_role` é que nunca pode sair
-> do painel do Supabase.
+> `schema-atual.sql`, não o segredo da chave. A `service_role` é que nunca
+> pode sair do painel do Supabase.
 
 ## 5. Publicar no GitHub Pages
 
@@ -185,7 +192,10 @@ src/
     Metricas.jsx           Gráficos e mapa relativo por bairro
     Login.jsx              Entrada da área restrita
 supabase/
-  schema.sql               Tabelas, RLS e funções de acesso
+  schema-atual.sql         Estado consolidado das tabelas, RLS e funções
+  migration-*.sql          Mudanças aplicadas depois do schema-atual.sql
+  functions/               Edge Functions (Deno) — nem todas implantadas
+  README.md                Como o esquema de migrações funciona e evolui
 ```
 
 ### Colocar o vídeo explicativo na landing
@@ -197,9 +207,14 @@ apague as duas linhas de comentário (`<!--` e `-->`) que envolvem a seção.
 
 ## Pendências conhecidas
 
-- **Notificação só com a aba aberta.** O app reconsulta a cada 20 segundos
-  enquanto a pessoa está com a página aberta. Não existe push de verdade — para
-  isso seria preciso service worker e chaves VAPID.
+- **Push implantado só do lado do navegador.** O app já pede permissão, cria
+  a inscrição (service worker + chave VAPID pública) e salva em
+  `push_subscriptions`. A Edge Function que manda a notificação de verdade
+  (`supabase/functions/send-push`) está escrita, mas nunca foi implantada —
+  falta rodar `supabase functions deploy send-push` com a chave VAPID
+  *privada* configurada como secret, e então trocar o polling de 20 segundos
+  em `PatientTracking`/`PhysioDashboard` pela notificação real. Até lá, a aba
+  aberta continua reconsultando a cada 20 segundos como hoje.
 - **Backup manual.** O Painel exporta e restaura JSON, mas quem faz o backup
   automático diário é o próprio Supabase (plano free guarda 7 dias).
 - **Anti-spam simples.** Um telefone pode ter no máximo 5 pedidos abertos ao

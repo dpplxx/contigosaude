@@ -42,7 +42,6 @@ import {
   restaurarBackup,
   verificarCrefito,
 } from "../lib/api";
-import { trackEvent, Events } from "../lib/analytics";
 import {
   ESPECIALIDADES_FISIO,
   calcularMatches,
