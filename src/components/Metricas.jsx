@@ -152,7 +152,9 @@ export function Metricas({ dados }) {
 
   const mediasPorFisio = fisios
     .map((p) => {
-      const notas = avaliacoes.filter((a) => a.fisio_id === p.id);
+      const notas = avaliacoes.filter(
+        (a) => a.fisio_id === p.id && a.status !== "removida"
+      );
       const media = notas.length > 0 ? notas.reduce((s, a) => s + a.nota, 0) / notas.length : null;
       return { p, media, count: notas.length };
     })

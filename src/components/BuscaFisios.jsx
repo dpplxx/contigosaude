@@ -1,12 +1,27 @@
 import { useCallback, useState } from "react";
-import { MapPin, Phone, MessageCircle, Loader, ShieldCheck, Star, ChevronDown, ChevronUp } from "lucide-react";
+import { MapPin, Phone, MessageCircle, Loader, ShieldCheck, Star, ChevronDown, ChevronUp, Flag, Share2, Check } from "lucide-react";
 import { Card, Field, TextInput, SelectInput, PrimaryButton, StarRow } from "./ui";
 import { CepInput } from "./Compartilhados";
 import { ESPECIALIDADES_PACIENTE, URGENCIAS, mensagemDeErro, tempoRelativo, waLink } from "../lib/utils";
 import { supabase } from "../lib/supabase";
-import { criarPedido, avaliacoesFisio } from "../lib/api";
+import {
+  criarPedido,
+  avaliacoesFisio,
+  denunciarAvaliacao,
+  registrarEventoMarketplace,
+} from "../lib/api";
 import { normalizarTexto } from "../lib/normalizacao";
 import { TurnstileWidget, turnstileConfigurado } from "../lib/turnstile";
+import { trackEvent, Events } from "../lib/analytics";
+
+const MOTIVOS_DENUNCIA = [
+  { valor: "falsa", label: "Avaliação falsa" },
+  { valor: "concorrencia", label: "Concorrência desleal" },
+  { valor: "autopromocao", label: "Autopromoção" },
+  { valor: "ofensiva", label: "Conteúdo ofensivo" },
+  { valor: "publicidade", label: "Publicidade disfarçada" },
+  { valor: "outro", label: "Outro motivo" },
+];
 
 const BUSCA_INITIAL = {
   nome: "",
@@ -85,6 +100,15 @@ export function BuscaFisios() {
       // Cria o pedido no Supabase para registrar a demanda
       await criarPedido(form);
 
+      // Rastreia eventos de busca
+      trackEvent(Events.SEARCH_PERFORMED, {
+        especialidade: form.especialidade,
+        cidade: form.cidade,
+        bairro: form.bairro,
+      });
+      trackEvent(Events.SPECIALTY_SEARCHED, { especialidade: form.especialidade });
+      trackEvent(Events.LOCATION_SEARCHED, { cidade: form.cidade, bairro: form.bairro });
+
       // Busca os fisios compatíveis
       const { data, error } = await supabase.rpc("hc_listar_fisios", {
         p_especialidade: form.especialidade,
@@ -95,7 +119,42 @@ export function BuscaFisios() {
       });
 
       if (error) throw error;
-      setFisios(data || []);
+
+      const resultados = data || [];
+
+      if (resultados.length > 0) {
+        trackEvent(Events.PROFESSIONAL_APPEARED, { count: resultados.length });
+      } else {
+        trackEvent(Events.SEARCH_NO_RESULTS, {
+          especialidade: form.especialidade,
+          cidade: form.cidade,
+          bairro: form.bairro,
+        });
+      }
+
+      // Registra a busca.
+      // Se o analytics falhar, a busca continua normalmente.
+      registrarEventoMarketplace({
+        tipo: "busca",
+        especialidade: form.especialidade,
+        cidade: form.cidade,
+        uf: form.uf,
+        quantidadeResultados: resultados.length,
+      }).catch(() => {});
+
+      // Registra quais profissionais foram efetivamente apresentados.
+      // Não usamos await para não atrasar a interface.
+      resultados.forEach((fisio) => {
+        registrarEventoMarketplace({
+          tipo: "resultado_exibido",
+          fisioId: fisio.id,
+          especialidade: form.especialidade,
+          cidade: form.cidade,
+          uf: form.uf,
+        }).catch(() => {});
+      });
+
+      setFisios(resultados);
     } catch (e) {
       setErro(mensagemDeErro(e, "Erro ao buscar profissionais."));
     } finally {
@@ -253,6 +312,83 @@ function ListaFisios({ fisios, onVoltar, whatsappPaciente }) {
   );
 }
 
+function DenunciarAvaliacao({ avaliacaoId }) {
+  const [aberto, setAberto] = useState(false);
+  const [motivo, setMotivo] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [enviado, setEnviado] = useState(false);
+  const [erro, setErro] = useState("");
+
+  const enviar = async () => {
+    if (!motivo) return;
+    setEnviando(true);
+    setErro("");
+    try {
+      await denunciarAvaliacao({ avaliacaoId, motivo });
+      setEnviado(true);
+      setAberto(false);
+    } catch (e) {
+      setErro(mensagemDeErro(e, "Não foi possível enviar a denúncia."));
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  if (enviado) {
+    return (
+      <p className="text-xs mt-1" style={{ color: "var(--muted3)" }}>
+        Denúncia enviada — nossa equipe vai analisar.
+      </p>
+    );
+  }
+
+  if (!aberto) {
+    return (
+      <button
+        onClick={() => setAberto(true)}
+        className="flex items-center gap-1 text-xs mt-1"
+        style={{ color: "var(--muted3)" }}
+      >
+        <Flag size={11} /> Denunciar
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+      <select
+        value={motivo}
+        onChange={(e) => setMotivo(e.target.value)}
+        className="text-xs rounded border outline-none py-1 px-1.5"
+        style={{ borderColor: "var(--border)", background: "var(--card)", color: "var(--text)" }}
+      >
+        <option value="">Por quê?</option>
+        {MOTIVOS_DENUNCIA.map((m) => (
+          <option key={m.valor} value={m.valor}>
+            {m.label}
+          </option>
+        ))}
+      </select>
+      <button
+        onClick={enviar}
+        disabled={!motivo || enviando}
+        className="text-xs underline disabled:opacity-50"
+        style={{ color: "#C24A3E" }}
+      >
+        {enviando ? "Enviando..." : "Enviar"}
+      </button>
+      <button
+        onClick={() => setAberto(false)}
+        className="text-xs underline"
+        style={{ color: "var(--muted3)" }}
+      >
+        Cancelar
+      </button>
+      {erro && <span className="text-xs w-full" style={{ color: "#C24A3E" }}>{erro}</span>}
+    </div>
+  );
+}
+
 function AvaliacoesFisio({ fisioId }) {
   const [aberto, setAberto] = useState(false);
   const [carregando, setCarregando] = useState(false);
@@ -299,10 +435,15 @@ function AvaliacoesFisio({ fisioId }) {
             </p>
           )}
           {!carregando &&
-            avaliacoes?.map((a, i) => (
-              <div key={i} className="pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+            avaliacoes?.map((a) => (
+              <div key={a.id} className="pt-2" style={{ borderTop: "1px solid var(--border)" }}>
                 <div className="flex items-center justify-between gap-2">
-                  <StarRow value={a.nota} size={12} />
+                  <div className="flex items-center gap-1.5">
+                    <StarRow value={a.nota} size={12} />
+                    <span className="text-xs font-medium" style={{ color: "var(--muted1)" }}>
+                      {a.nome_avaliador || "Anônimo"}
+                    </span>
+                  </div>
                   <span className="text-xs" style={{ color: "var(--muted3)" }}>
                     {tempoRelativo(a.criado_em)}
                   </span>
@@ -312,6 +453,7 @@ function AvaliacoesFisio({ fisioId }) {
                     {a.comentario}
                   </p>
                 )}
+                <DenunciarAvaliacao avaliacaoId={a.id} />
               </div>
             ))}
         </div>
@@ -321,10 +463,58 @@ function AvaliacoesFisio({ fisioId }) {
 }
 
 function CartaFisio({ fisio, whatsappPaciente }) {
+  const [copiado, setCopiado] = useState(false);
+
+  const handleWhatsAppClick = () => {
+    trackEvent(Events.WHATSAPP_CLICKED, {
+      fisio_id: fisio.id,
+      fisio_nome: fisio.nome,
+      paciente_whatsapp: whatsappPaciente,
+    });
+    registrarEventoMarketplace({
+      tipo: "whatsapp_clique",
+      fisioId: fisio.id,
+    }).catch(() => {});
+  };
+
+  const handleProfileClick = () => {
+    trackEvent(Events.PROFILE_OPENED, {
+      fisio_id: fisio.id,
+      fisio_nome: fisio.nome,
+    });
+  };
+
+  const handleShare = async (e) => {
+    e.stopPropagation();
+    trackEvent(Events.PROFILE_SHARED, { fisio_id: fisio.id, fisio_nome: fisio.nome });
+
+    const texto = `${fisio.nome} — fisioterapeuta${fisio.bairro ? ` em ${fisio.bairro}` : ""}. Encontrei no Contigo Saúde:`;
+    const url = window.location.origin;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: fisio.nome, text: texto, url });
+        return;
+      }
+    } catch {
+      // Usuário cancelou o compartilhamento nativo — não é erro, só não faz nada.
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(`${texto} ${url}`);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      // Sem clipboard disponível (ex.: contexto não seguro) — sem fallback melhor aqui.
+    }
+  };
+
   return (
     <div
       className="border rounded-lg p-4 flex gap-4"
       style={{ borderColor: "var(--border)" }}
+      onClick={handleProfileClick}
     >
       {/* Foto */}
       {fisio.foto_url ? (
@@ -413,12 +603,21 @@ function CartaFisio({ fisio, whatsappPaciente }) {
           href={waLink(fisio.whatsapp, `Oi, encontrei seu perfil no Contigo Saúde. Gostaria de agendar uma sessão!`)}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={handleWhatsAppClick}
           className="flex items-center gap-2 px-3 py-2 rounded text-xs font-medium"
           style={{ background: "#25D366", color: "white" }}
         >
           <MessageCircle size={14} />
           WhatsApp
         </a>
+        <button
+          onClick={handleShare}
+          className="flex items-center gap-2 px-3 py-2 rounded text-xs font-medium border"
+          style={{ borderColor: "var(--border)", color: "var(--muted1)" }}
+        >
+          {copiado ? <Check size={14} /> : <Share2 size={14} />}
+          {copiado ? "Copiado!" : "Compartilhar"}
+        </button>
       </div>
     </div>
   );

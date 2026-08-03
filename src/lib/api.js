@@ -144,6 +144,54 @@ export async function registrarClique(fisioId) {
 }
 
 // ---------------------------------------------------------------------------
+// Analytics do marketplace
+// ---------------------------------------------------------------------------
+
+function sessaoMarketplace() {
+  try {
+    const chave = "contigo_marketplace_session";
+
+    let id = localStorage.getItem(chave);
+
+    if (!id) {
+      id =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+      localStorage.setItem(chave, id);
+    }
+
+    return id;
+  } catch {
+    return null;
+  }
+}
+
+export async function registrarEventoMarketplace({
+  tipo,
+  fisioId = null,
+  especialidade = null,
+  cidade = null,
+  uf = null,
+  quantidadeResultados = null,
+}) {
+  try {
+    await rpc("hc_registrar_evento_marketplace", {
+      p_tipo: tipo,
+      p_fisio_id: fisioId,
+      p_especialidade: especialidade,
+      p_cidade: cidade,
+      p_uf: uf,
+      p_quantidade_resultados: quantidadeResultados,
+      p_sessao_id: sessaoMarketplace(),
+    });
+  } catch {
+    // Analytics nunca pode impedir o paciente de usar o produto.
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Confiança pública — dados usados na landing e nos cards de fisio
 // ---------------------------------------------------------------------------
 
@@ -158,6 +206,14 @@ export async function contarFisios() {
 export async function avaliacoesFisio(fisioId) {
   const data = await rpc("hc_avaliacoes_fisio", { p_fisio_id: fisioId });
   return data || [];
+}
+
+export function denunciarAvaliacao({ avaliacaoId, motivo, detalhes }) {
+  return rpc("hc_denunciar_avaliacao", {
+    p_avaliacao_id: avaliacaoId,
+    p_motivo: motivo,
+    p_detalhes: detalhes || null,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -270,12 +326,26 @@ export function atualizarStatusAgendamentoPainel(id, status) {
   });
 }
 
-export function avaliarPeloPainel({ fisioId, nota, comentario }) {
+export function avaliarPeloPainel({ fisioId, nota, comentario, nomeAvaliador }) {
   return rpc("hc_admin_avaliar", {
     p_fisio_id: fisioId,
     p_nota: nota,
     p_comentario: comentario || null,
+    p_nome_avaliador: nomeAvaliador || null,
   });
+}
+
+// ---------------------------------------------------------------------------
+// Moderação de avaliações (admin)
+// ---------------------------------------------------------------------------
+
+export async function avaliacoesModeracao() {
+  const data = await rpc("hc_avaliacoes_moderacao");
+  return data || [];
+}
+
+export function moderarAvaliacao({ avaliacaoId, acao }) {
+  return rpc("hc_moderar_avaliacao", { p_avaliacao_id: avaliacaoId, p_acao: acao });
 }
 
 // ---------------------------------------------------------------------------

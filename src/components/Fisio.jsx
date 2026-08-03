@@ -34,6 +34,7 @@ import {
   marcarStatusAgendamento,
   meuPainelFisio,
 } from "../lib/api";
+import { trackEvent, Events } from "../lib/analytics";
 import {
   ESPECIALIDADES_FISIO,
   STATUS_AGENDAMENTO,
@@ -99,7 +100,13 @@ export function PhysioForm({ onToast }) {
     let ativo = true;
     meuPainelFisio()
       .then((dados) => {
-        if (!ativo || !dados.fisio) return;
+        if (!ativo || !dados.fisio) {
+          // Novo cadastro: rastreia que iniciou o signup
+          if (ativo) {
+            trackEvent(Events.SIGNUP_STARTED);
+          }
+          return;
+        }
         const f = dados.fisio;
         setForm({
           nome: f.nome || "",
@@ -127,6 +134,7 @@ export function PhysioForm({ onToast }) {
       })
       .catch(() => {
         // Sem cadastro ainda (ou erro ao buscar): segue com o formulário em branco.
+        trackEvent(Events.SIGNUP_STARTED);
       })
       .finally(() => {
         if (ativo) setCarregando(false);
@@ -209,6 +217,13 @@ export function PhysioForm({ onToast }) {
     setErro("");
     try {
       await cadastrarFisio(form);
+      if (!editando) {
+        trackEvent(Events.SIGNUP_COMPLETED, {
+          especialidades: form.especialidades.join(", "),
+          cidade: form.cidade,
+          bairros: form.bairros.join(", "),
+        });
+      }
       onToast?.(editando ? "Alterações salvas!" : "Cadastro enviado com sucesso!");
       if (!editando) setForm(PHYSIO_INITIAL);
       setEditando(true);

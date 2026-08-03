@@ -28,6 +28,7 @@ import { aoMudarSessao, carregarPainel, ehAdmin, ehFisio, sair, sessaoAtual } fr
 import { supabaseConfigurado } from "./lib/supabase";
 import { mensagemDeErro } from "./lib/utils";
 import { ativarPush, pushSuportado } from "./lib/push";
+import { initSession, trackEvent, Events } from "./lib/analytics";
 
 const PAINEL_VAZIO = {
   fisios: [],
@@ -183,6 +184,8 @@ export default function App() {
   };
 
   useEffect(() => {
+    initSession();
+    trackEvent(Events.PAGE_VIEW);
     sessaoAtual().then(setSessao);
     return aoMudarSessao(setSessao);
   }, []);
@@ -191,37 +194,31 @@ export default function App() {
   // qualquer paciente ou fisio autenticado também tem "sessao" preenchida
   // (é a mesma sessão do Supabase Auth), então checar isso evita mostrar
   // essas abas para quem não tem nada a ver com elas.
+  //
+  // Paciente e fisio usam a mesma conta pra logar. Sem a trava abaixo, quem
+  // já tem cadastro de fisioterapeuta podia cair (ou voltar) pro lado de
+  // paciente sem querer — e criar pedido como se fosse cliente da própria
+  // conta. Uma vez detectado, trava direto no lado fisio — EXCETO pra conta
+  // admin, que precisa transitar pelos dois lados de propósito (testar o
+  // fluxo completo, atender pedido também como paciente de teste etc.).
+  // As duas checagens (admin e fisio) rodam juntas nesta única chamada pra
+  // não ter corrida entre elas: sem isso, a trava do lado fisio podia
+  // disparar antes da confirmação de admin chegar.
   useEffect(() => {
     if (!sessao) {
       setSouAdmin(false);
-      return;
-    }
-    let ativo = true;
-    ehAdmin()
-      .then((v) => ativo && setSouAdmin(v))
-      .catch(() => ativo && setSouAdmin(false));
-    return () => {
-      ativo = false;
-    };
-  }, [sessao]);
-
-  // Paciente e fisio usam a mesma conta pra logar. Sem essa checagem, quem
-  // já tem cadastro de fisioterapeuta podia cair (ou voltar) pro lado de
-  // paciente sem querer — e criar pedido como se fosse cliente da própria
-  // conta. Uma vez detectado, trava direto no lado fisio.
-  useEffect(() => {
-    if (!sessao) {
       setSouFisio(false);
       return;
     }
     let ativo = true;
-    ehFisio()
-      .then((v) => {
+    Promise.all([ehAdmin().catch(() => false), ehFisio().catch(() => false)]).then(
+      ([admin, fisio]) => {
         if (!ativo) return;
-        setSouFisio(v);
-        if (v) setRole((r) => (r === "paciente" ? "fisio" : r));
-      })
-      .catch(() => ativo && setSouFisio(false));
+        setSouAdmin(admin);
+        setSouFisio(fisio);
+        if (fisio && !admin) setRole((r) => (r === "paciente" ? "fisio" : r));
+      }
+    );
     return () => {
       ativo = false;
     };
@@ -279,7 +276,7 @@ export default function App() {
       />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 flex gap-2 pb-3 flex-wrap">
-        {!souFisio && (
+        {(!souFisio || souAdmin) && (
           <RoleButton active={role === "paciente"} onClick={() => setRole("paciente")}>
             <Home size={16} /> Sou paciente
           </RoleButton>

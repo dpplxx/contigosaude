@@ -26,6 +26,8 @@ Os dados são utilizados exclusivamente para viabilizar a conexão entre pacient
 3. COMPARTILHAMENTO
 Os dados do paciente são compartilhados apenas com o profissional selecionado para o atendimento. Os dados do profissional são exibidos dentro da plataforma para que os pacientes possam conhecê-lo.
 
+Ao avaliar um profissional após um atendimento, seu primeiro nome e a inicial do último sobrenome (ex.: "Maria S.") ficam visíveis publicamente junto da nota e do comentário — nunca o nome completo, o WhatsApp ou qualquer outro dado de contato. Avaliações podem ser denunciadas por qualquer visitante e passam por moderação da equipe antes de serem removidas.
+
 4. DIREITOS DO TITULAR
 Você pode solicitar a qualquer momento a correção, exclusão ou portabilidade dos seus dados enviando um e-mail para suporte@cuideemcasa.com.br.
 

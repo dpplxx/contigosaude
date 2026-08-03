@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowUpDown,
   Download,
+  Flag,
   GraduationCap,
   MapPin,
   MousePointerClick,
@@ -35,10 +36,13 @@ import {
   agendar,
   atualizarStatusPedido,
   avaliarPeloPainel,
+  avaliacoesModeracao,
+  moderarAvaliacao,
   registrarClique,
   restaurarBackup,
   verificarCrefito,
 } from "../lib/api";
+import { trackEvent, Events } from "../lib/analytics";
 import {
   ESPECIALIDADES_FISIO,
   calcularMatches,
@@ -139,6 +143,7 @@ function AgendarForm({ pedido, fisios, onCreated }) {
 function RatingWidget({ fisioId, onSubmitted }) {
   const [nota, setNota] = useState(0);
   const [comentario, setComentario] = useState("");
+  const [nomeAvaliador, setNomeAvaliador] = useState("");
   const [saving, setSaving] = useState(false);
   const [erro, setErro] = useState("");
   const [open, setOpen] = useState(false);
@@ -148,9 +153,10 @@ function RatingWidget({ fisioId, onSubmitted }) {
     setSaving(true);
     setErro("");
     try {
-      await avaliarPeloPainel({ fisioId, nota, comentario });
+      await avaliarPeloPainel({ fisioId, nota, comentario, nomeAvaliador });
       setNota(0);
       setComentario("");
+      setNomeAvaliador("");
       setOpen(false);
       await onSubmitted?.();
     } catch (e) {
@@ -181,6 +187,12 @@ function RatingWidget({ fisioId, onSubmitted }) {
           </button>
         ))}
       </div>
+      <TextInput
+        value={nomeAvaliador}
+        onChange={(e) => setNomeAvaliador(e.target.value)}
+        placeholder="Nome de quem avaliou (opcional)"
+        className="mb-2 text-sm"
+      />
       <TextArea
         value={comentario}
         onChange={(e) => setComentario(e.target.value)}
@@ -278,6 +290,119 @@ function VerificacaoCrefito({ fisio, onDone }) {
         )}
       </div>
     </div>
+  );
+}
+
+const MOTIVO_LABEL = {
+  falsa: "Avaliação falsa",
+  concorrencia: "Concorrência desleal",
+  autopromocao: "Autopromoção",
+  ofensiva: "Conteúdo ofensivo",
+  publicidade: "Publicidade disfarçada",
+  outro: "Outro motivo",
+};
+
+function ModeracaoAvaliacoes() {
+  const [itens, setItens] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState("");
+  const [processando, setProcessando] = useState(null);
+
+  const carregar = async () => {
+    setLoading(true);
+    setErro("");
+    try {
+      const data = await avaliacoesModeracao();
+      setItens(data);
+    } catch (e) {
+      setErro(mensagemDeErro(e, "Não foi possível carregar as denúncias."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    carregar();
+  }, []);
+
+  const decidir = async (avaliacaoId, acao) => {
+    setProcessando(avaliacaoId);
+    try {
+      await moderarAvaliacao({ avaliacaoId, acao });
+      await carregar();
+    } catch (e) {
+      setErro(mensagemDeErro(e, "Não foi possível aplicar a moderação."));
+    } finally {
+      setProcessando(null);
+    }
+  };
+
+  if (loading) return null;
+  if (!erro && itens.length === 0) return null;
+
+  return (
+    <section>
+      <h3
+        className="text-sm uppercase tracking-wide mb-3 flex items-center gap-1.5"
+        style={{ color: "#C24A3E" }}
+      >
+        <Flag size={14} /> Avaliações denunciadas ({itens.length})
+      </h3>
+      <ErroInline>{erro}</ErroInline>
+      <div className="space-y-3">
+        {itens.map((a) => (
+          <Card key={a.id}>
+            <div className="flex items-baseline justify-between gap-2 flex-wrap">
+              <p className="font-medium">{a.fisio_nome}</p>
+              <span className="text-xs" style={{ color: "var(--muted3)" }}>
+                {tempoRelativo(a.criado_em)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 mt-1">
+              <StarRow value={a.nota} size={13} />
+              <span className="text-xs" style={{ color: "var(--muted1)" }}>
+                {a.nome_avaliador || "Anônimo"}
+              </span>
+            </div>
+            {a.comentario && (
+              <p className="text-sm mt-1.5" style={{ color: "var(--muted2)" }}>
+                "{a.comentario}"
+              </p>
+            )}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {a.denuncias.map((d) => (
+                <span
+                  key={d.id}
+                  className="text-xs px-2 py-0.5 rounded-full"
+                  style={{ background: "#C24A3E22", color: "#C24A3E" }}
+                  title={d.detalhes || ""}
+                >
+                  {MOTIVO_LABEL[d.motivo] || d.motivo}
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-3 mt-3">
+              <button
+                onClick={() => decidir(a.id, "manter")}
+                disabled={processando === a.id}
+                className="text-xs underline disabled:opacity-50"
+                style={{ color: "#2FAE72" }}
+              >
+                Manter avaliação
+              </button>
+              <button
+                onClick={() => decidir(a.id, "remover")}
+                disabled={processando === a.id}
+                className="text-xs underline disabled:opacity-50"
+                style={{ color: "#C24A3E" }}
+              >
+                Remover avaliação
+              </button>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -513,6 +638,8 @@ export function Painel({ dados, loading, erro, onRefresh }) {
         </p>
       </Card>
 
+      <ModeracaoAvaliacoes />
+
       <div className="flex flex-wrap gap-2">
         <button
           onClick={exportarBackup}
@@ -623,7 +750,9 @@ export function Painel({ dados, loading, erro, onRefresh }) {
         {fisiosFiltrados.length === 0 && !loading && <Vazio>Nenhum fisioterapeuta encontrado.</Vazio>}
         <div className="space-y-3">
           {fisiosFiltrados.map((p) => {
-            const notas = avaliacoes.filter((a) => a.fisio_id === p.id);
+            const notas = avaliacoes.filter(
+              (a) => a.fisio_id === p.id && a.status !== "removida"
+            );
             const media =
               notas.length > 0 ? notas.reduce((s, a) => s + a.nota, 0) / notas.length : 0;
             return (

@@ -69,6 +69,11 @@ function AvaliarFisio({ fisio, onDone }) {
         placeholder="Comentário (opcional)"
         className="mb-2"
       />
+      <p className="text-xs mb-2" style={{ color: "var(--muted3)" }}>
+        Fale só sobre o atendimento que você recebeu. Não são permitidos links, telefones,
+        conteúdo ofensivo ou avaliações que não sejam sobre uma experiência real — avaliações
+        assim são removidas na moderação.
+      </p>
       <ErroInline>{erro}</ErroInline>
       <div className="flex gap-2 mt-2">
         <button
