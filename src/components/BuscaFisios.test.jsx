@@ -192,6 +192,66 @@ describe('BuscaFisios — resultados da busca e denúncia de avaliação', () =>
     )
   })
 
+  it('clicar no card do profissional abre o perfil completo', async () => {
+    obterFisioPublico.mockResolvedValue({
+      id: 'fisio-1',
+      nome: 'João Souza',
+      whatsapp: '11987654321',
+      especialidades: ['Ortopédica'],
+      resumo: 'Especialista em reabilitação ortopédica.',
+      disponibilidade: 'Segunda a sexta, das 8h às 18h.',
+      total_avaliacoes: 0,
+    })
+
+    await buscarERenderizar([
+      {
+        id: 'fisio-1',
+        nome: 'João Souza',
+        whatsapp: '11987654321',
+        especialidades: ['Ortopédica'],
+        total_avaliacoes: 0,
+      },
+    ])
+
+    fireEvent.click(await screen.findByText('João Souza'))
+
+    expect(obterFisioPublico).toHaveBeenCalledWith('fisio-1')
+    expect(await screen.findByText('Especialista em reabilitação ortopédica.')).toBeInTheDocument()
+    expect(screen.getByText('Segunda a sexta, das 8h às 18h.')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText(/Voltar para busca/i))
+
+    // Voltar do perfil deve devolver pra lista de resultados (a busca já
+    // feita), não resetar pro formulário inicial.
+    expect(await screen.findByText('João Souza')).toBeInTheDocument()
+    expect(screen.getByText('WhatsApp')).toBeInTheDocument()
+  })
+
+  it('clicar em "Ver perfil completo" também abre o perfil', async () => {
+    obterFisioPublico.mockResolvedValue({
+      id: 'fisio-1',
+      nome: 'João Souza',
+      whatsapp: '11987654321',
+      especialidades: [],
+      total_avaliacoes: 0,
+    })
+
+    await buscarERenderizar([
+      {
+        id: 'fisio-1',
+        nome: 'João Souza',
+        whatsapp: '11987654321',
+        especialidades: [],
+        total_avaliacoes: 0,
+      },
+    ])
+
+    fireEvent.click(await screen.findByText('Ver perfil completo'))
+
+    expect(obterFisioPublico).toHaveBeenCalledWith('fisio-1')
+    expect(await screen.findByText(/Falar com João pelo WhatsApp/i)).toBeInTheDocument()
+  })
+
   it('mostra mensagem de nenhum resultado quando a busca volta vazia', async () => {
     await buscarERenderizar([])
 

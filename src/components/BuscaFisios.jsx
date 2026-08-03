@@ -61,8 +61,9 @@ export function BuscaFisios() {
   const [fisios, setFisios] = useState(null);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
-  const [fisioCompartilhado, setFisioCompartilhado] = useState(null);
+  const [perfilAberto, setPerfilAberto] = useState(null);
   const [carregandoPerfil, setCarregandoPerfil] = useState(false);
+  const [erroPerfil, setErroPerfil] = useState("");
   // Honeypot: campo escondido de humano nenhum, mas visível pra bot que
   // preenche todo input do formulário. Filtra os robôs mais simples sem
   // depender de captcha pago e sem falso positivo em quem usa autofill
@@ -71,50 +72,48 @@ export function BuscaFisios() {
   const [site, setSite] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
 
+  // Usada tanto pelo link direto (?fisio=UUID) quanto pelo clique num card
+  // da lista de resultados — as duas entradas levam ao mesmo perfil público.
+  const abrirPerfil = useCallback(async (fisioId, origem) => {
+    setCarregandoPerfil(true);
+    setErroPerfil("");
+
+    try {
+      const fisio = await obterFisioPublico(fisioId);
+
+      setPerfilAberto(fisio);
+
+      trackEvent(Events.PROFILE_OPENED, {
+        fisio_id: fisio.id,
+        origem,
+      });
+
+      registrarEventoMarketplace({
+        tipo: "resultado_exibido",
+        fisioId: fisio.id,
+      }).catch(() => {});
+    } catch (e) {
+      setErroPerfil(mensagemDeErro(e, "Não foi possível carregar o perfil do profissional."));
+    } finally {
+      setCarregandoPerfil(false);
+    }
+  }, []);
+
+  const fecharPerfil = () => {
+    // Só mexe na URL se foi ela que abriu o perfil — clique na lista não
+    // altera a URL, então não há nada pra limpar.
+    if (fisioInicialDaUrl()) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    setPerfilAberto(null);
+    setErroPerfil("");
+  };
+
   useEffect(() => {
     const fisioId = fisioInicialDaUrl();
-
     if (!fisioId) return;
-
-    let ativo = true;
-
-    const carregarPerfil = async () => {
-      setCarregandoPerfil(true);
-      setErro("");
-
-      try {
-        const fisio = await obterFisioPublico(fisioId);
-
-        if (!ativo) return;
-
-        setFisioCompartilhado(fisio);
-
-        trackEvent(Events.PROFILE_OPENED, {
-          fisio_id: fisio.id,
-          origem: "link_direto",
-        });
-
-        registrarEventoMarketplace({
-          tipo: "resultado_exibido",
-          fisioId: fisio.id,
-        }).catch(() => {});
-      } catch (e) {
-        if (ativo) {
-          setErro(mensagemDeErro(e, "Não foi possível carregar o perfil do profissional."));
-        }
-      } finally {
-        if (ativo) {
-          setCarregandoPerfil(false);
-        }
-      }
-    };
-
-    carregarPerfil();
-
-    return () => {
-      ativo = false;
-    };
-  }, []);
+    abrirPerfil(fisioId, "link_direto");
+  }, [abrirPerfil]);
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -213,43 +212,46 @@ export function BuscaFisios() {
     }
   };
 
-  if (fisioInicialDaUrl()) {
-    if (carregandoPerfil) {
-      return (
-        <Card>
-          <div className="flex items-center gap-2">
-            <Loader size={18} className="animate-spin" />
-            Carregando perfil...
-          </div>
-        </Card>
-      );
-    }
+  if (carregandoPerfil) {
+    return (
+      <Card>
+        <div className="flex items-center gap-2">
+          <Loader size={18} className="animate-spin" />
+          Carregando perfil...
+        </div>
+      </Card>
+    );
+  }
 
-    if (erro) {
-      return (
-        <Card>
-          <div className="text-sm" style={{ color: "#C24A3E" }}>
-            {erro}
-          </div>
-        </Card>
-      );
-    }
+  if (erroPerfil) {
+    return (
+      <Card>
+        <button
+          onClick={fecharPerfil}
+          className="text-sm underline mb-3 block"
+          style={{ color: "#16C4A8" }}
+        >
+          ← Voltar
+        </button>
+        <div className="text-sm" style={{ color: "#C24A3E" }}>
+          {erroPerfil}
+        </div>
+      </Card>
+    );
+  }
 
-    if (fisioCompartilhado) {
-      return (
-        <PerfilCompartilhado
-          fisio={fisioCompartilhado}
-          onVoltar={() => {
-            window.history.replaceState({}, "", window.location.pathname);
-            setFisioCompartilhado(null);
-          }}
-        />
-      );
-    }
+  if (perfilAberto) {
+    return <PerfilCompartilhado fisio={perfilAberto} onVoltar={fecharPerfil} />;
   }
 
   if (fisios !== null) {
-    return <ListaFisios fisios={fisios} onVoltar={() => setFisios(null)} />;
+    return (
+      <ListaFisios
+        fisios={fisios}
+        onVoltar={() => setFisios(null)}
+        onAbrirPerfil={(fisioId) => abrirPerfil(fisioId, "lista_busca")}
+      />
+    );
   }
 
   return (
@@ -341,7 +343,7 @@ export function BuscaFisios() {
   );
 }
 
-function ListaFisios({ fisios, onVoltar }) {
+function ListaFisios({ fisios, onVoltar, onAbrirPerfil }) {
   return (
     <div className="space-y-4">
       <Card>
@@ -361,7 +363,7 @@ function ListaFisios({ fisios, onVoltar }) {
         ) : (
           <div className="grid gap-4">
             {fisios.map((fisio) => (
-              <CartaFisio key={fisio.id} fisio={fisio} />
+              <CartaFisio key={fisio.id} fisio={fisio} onAbrirPerfil={onAbrirPerfil} />
             ))}
           </div>
         )}
@@ -471,7 +473,9 @@ function AvaliacoesFisio({ fisioId }) {
   };
 
   return (
-    <div className="mt-2">
+    // Fica dentro do card clicável (CartaFisio); sem isso, abrir avaliações
+    // ou denunciar uma delas também abriria o perfil por baixo.
+    <div className="mt-2" onClick={(e) => e.stopPropagation()}>
       <button
         onClick={alternar}
         className="flex items-center gap-1 text-xs underline"
@@ -520,10 +524,12 @@ function AvaliacoesFisio({ fisioId }) {
   );
 }
 
-function CartaFisio({ fisio }) {
+function CartaFisio({ fisio, onAbrirPerfil }) {
   const [copiado, setCopiado] = useState(false);
 
-  const handleWhatsAppClick = () => {
+  const handleWhatsAppClick = (e) => {
+    // Sem isso, o clique também dispararia a abertura do perfil por baixo.
+    e.stopPropagation();
     trackEvent(Events.WHATSAPP_CLICKED, {
       fisio_id: fisio.id,
     });
@@ -534,9 +540,7 @@ function CartaFisio({ fisio }) {
   };
 
   const handleProfileClick = () => {
-    trackEvent(Events.PROFILE_OPENED, {
-      fisio_id: fisio.id,
-    });
+    onAbrirPerfil(fisio.id);
   };
 
   const handleShare = async (e) => {
@@ -567,7 +571,7 @@ function CartaFisio({ fisio }) {
 
   return (
     <div
-      className="border rounded-lg p-4 flex gap-4"
+      className="border rounded-lg p-4 flex gap-4 cursor-pointer hover:shadow-sm transition-shadow"
       style={{ borderColor: "var(--border)" }}
       onClick={handleProfileClick}
     >
@@ -650,6 +654,17 @@ function CartaFisio({ fisio }) {
             ))}
           </div>
         )}
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleProfileClick();
+          }}
+          className="text-xs underline mt-3"
+          style={{ color: "#16C4A8" }}
+        >
+          Ver perfil completo
+        </button>
       </div>
 
       {/* Botão */}
@@ -802,6 +817,15 @@ function PerfilCompartilhado({ fisio, onVoltar }) {
               <h2 className="font-medium mb-2">Sobre o profissional</h2>
               <p className="text-sm leading-relaxed" style={{ color: "var(--muted1)" }}>
                 {fisio.resumo}
+              </p>
+            </div>
+          )}
+
+          {fisio.disponibilidade && (
+            <div className="w-full text-left mt-4">
+              <h2 className="font-medium mb-2">Disponibilidade</h2>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--muted1)" }}>
+                {fisio.disponibilidade}
               </p>
             </div>
           )}
