@@ -26,6 +26,7 @@ camadas:
    | `migration-2026-08-02-marketplace-analytics.sql` | `marketplace_eventos` — telemetria estruturada do funil (busca/resultado/whatsapp), colunas fixas pra agregação SQL direta |
    | `migration-2026-08-02-avaliacoes-moderacao.sql` | Nome do avaliador, denúncia pública e fila de moderação em `avaliacoes` |
    | `migration-perfil-publico.sql` | `hc_obter_fisio_publico()` — perfil individual do profissional, acessível sem login via `?fisio=UUID` |
+   | `migration-2026-08-02-push-triggers.sql` | Habilita `pg_net` e cria os triggers que disparam `send-push` automaticamente quando um agendamento é criado ou chega mensagem nova — ver seção "Push de verdade" abaixo |
 
 3. Confira no final: `\dt public.*` deve listar `admins`, `agendamentos`,
    `analytics_events`, `auditoria`, `avaliacoes`, `avaliacoes_denuncias`,
@@ -57,15 +58,37 @@ Depois disso, `schema-atual.sql` antigo *nunca mais deve ser editado* —
 ele deixaria de bater com o banco real. Toda mudança nova vira um
 `migration-AAAA-MM-DD-descricao.sql` novo.
 
+## Push de verdade (implantado em 2026-08-02)
+
+`functions/send-push` está implantada. O caminho completo:
+
+1. O navegador pede permissão, cria a inscrição (service worker + chave
+   VAPID pública) e salva em `push_subscriptions` — `src/lib/push.js`.
+2. Um `INSERT` em `agendamentos` ou `mensagens` dispara um trigger
+   (`migration-2026-08-02-push-triggers.sql`) que chama `hc_disparar_push()`.
+3. Essa função usa `pg_net.http_post()` (assíncrono, não trava a escrita)
+   pra chamar `send-push`, que busca as inscrições da conta e manda a
+   notificação de verdade via biblioteca `web-push`.
+
+Segredos do projeto (`supabase secrets set`, não vão pro Git):
+`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`. A chave pública
+precisa bater com `VITE_VAPID_PUBLIC_KEY` no `.env.local` **e** no GitHub
+Secret de mesmo nome — trocar uma sem trocar a outra quebra silenciosamente
+(inscrição nova assina com uma chave, `send-push` manda com outra, o
+navegador rejeita).
+
+O polling de 20 segundos nos dois lados (`PatientTracking`,
+`PhysioDashboard`) virou uma rede de segurança de 2 minutos — quem ativou
+notificação recebe na hora pelo push; quem não ativou (ou fechou a aba
+antes de decidir) ainda vê a atualização, só que mais devagar.
+
 ## Outras pastas
 
 - **`archive/`** — migrações já dobradas no `schema-atual.sql` atual, mais o
   `schema.sql` original (primeira versão do banco, antes de qualquer
   migração). Histórico só — não rode nada daqui.
 - **`functions/`** — Edge Functions (Deno). Nem toda função aqui está
-  implantada; cada arquivo documenta no topo se já está em produção ou não
-  (ver `functions/send-push/index.ts` para um exemplo de função pronta mas
-  ainda não implantada, e por quê).
+  implantada; cada arquivo documenta no topo se já está em produção ou não.
 - **`tests/`** — testes pgTAP das RPCs de confiança (autoavaliação, dupla
   avaliação, etc.). Rodam contra um Postgres local, não contra produção.
 

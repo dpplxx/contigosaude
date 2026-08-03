@@ -207,14 +207,13 @@ apague as duas linhas de comentário (`<!--` e `-->`) que envolvem a seção.
 
 ## Pendências conhecidas
 
-- **Push implantado só do lado do navegador.** O app já pede permissão, cria
-  a inscrição (service worker + chave VAPID pública) e salva em
-  `push_subscriptions`. A Edge Function que manda a notificação de verdade
-  (`supabase/functions/send-push`) está escrita, mas nunca foi implantada —
-  falta rodar `supabase functions deploy send-push` com a chave VAPID
-  *privada* configurada como secret, e então trocar o polling de 20 segundos
-  em `PatientTracking`/`PhysioDashboard` pela notificação real. Até lá, a aba
-  aberta continua reconsultando a cada 20 segundos como hoje.
+- **⚠️ Atualizar o GitHub Secret `VITE_VAPID_PUBLIC_KEY`.** A chave VAPID foi
+  trocada (a privada anterior tinha se perdido, nunca foi salva em lugar
+  nenhum). O `.env.local` já está com a nova, mas o secret do GitHub usado
+  no build de produção (`Settings → Secrets and variables → Actions`) ainda
+  está com o valor antigo — troque pelo novo valor do `.env.local` antes do
+  próximo deploy, senão o navegador do usuário assina a inscrição com uma
+  chave que a Edge Function não reconhece.
 - **Backup manual.** O Painel exporta e restaura JSON, mas quem faz o backup
   automático diário é o próprio Supabase (plano free guarda 7 dias).
 - **Anti-spam simples.** Um telefone pode ter no máximo 5 pedidos abertos ao

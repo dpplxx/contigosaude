@@ -613,9 +613,12 @@ export function PhysioDashboard({ onNotify }) {
     carregar();
   }, [carregar]);
 
+  // Quem ativou notificações recebe push de verdade quando chega mensagem
+  // nova (trigger no banco → send-push). Isso aqui é só a rede de segurança
+  // pra quem não ativou.
   useEffect(() => {
     if (!dados.fisio) return;
-    const intervalo = setInterval(carregar, 20000);
+    const intervalo = setInterval(carregar, 120000);
     return () => clearInterval(intervalo);
   }, [dados.fisio, carregar]);
 

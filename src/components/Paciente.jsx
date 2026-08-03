@@ -139,9 +139,13 @@ export function PatientTracking({ onNotify }) {
     agendadosAnteriores.current = idsAtuais;
   }, [pedidos, onNotify]);
 
-  // Sem push de verdade, a aba aberta reconsulta de tempos em tempos.
+  // Quem ativou notificações recebe push de verdade assim que o pedido é
+  // agendado (trigger no banco → send-push), mesmo com a aba fechada. Isso
+  // aqui é só a rede de segurança pra quem não ativou — por isso o
+  // intervalo é bem mais espaçado do que quando essa era a única forma de
+  // saber que algo mudou.
   useEffect(() => {
-    const intervalo = setInterval(carregar, 20000);
+    const intervalo = setInterval(carregar, 120000);
     return () => clearInterval(intervalo);
   }, [carregar]);
 

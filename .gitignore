@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Cache local da Supabase CLI (link do projeto, nada de segredo, mas é
+# específico da máquina que rodou o deploy)
+supabase/.temp/

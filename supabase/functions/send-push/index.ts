@@ -1,27 +1,23 @@
 // Edge Function: manda Web Push de verdade (chega mesmo com o app fechado).
 //
-// AINDA NÃO IMPLANTADA. Escrita e pronta pra revisão, mas subir isso exige
-// `supabase functions deploy send-push` (ou o botão de deploy no Dashboard),
-// que só quem tem acesso à CLI/conta do projeto pode rodar — mesma
-// restrição de sempre: nenhuma automação mexe nessa conta.
+// IMPLANTADA em 2026-08-02. Os 3 secrets do projeto (VAPID_PUBLIC_KEY,
+// VAPID_PRIVATE_KEY, VAPID_SUBJECT) estão configurados. SUPABASE_URL e
+// SUPABASE_SERVICE_ROLE_KEY existem automaticamente em todo Edge Function
+// do projeto.
 //
-// Antes de implantar, configurar 3 secrets do projeto (Dashboard → Edge
-// Functions → send-push → Secrets, ou `supabase secrets set`):
-//   VAPID_PUBLIC_KEY   — mesma chave pública que está em VITE_VAPID_PUBLIC_KEY
-//   VAPID_PRIVATE_KEY  — a chave privada do mesmo par (NUNCA vai pro Git)
-//   VAPID_SUBJECT      — "mailto:contato@contigosaude.com.br" (ou similar)
-// SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY já existem automaticamente em
-// todo Edge Function do projeto, não precisa configurar.
+// A chave VAPID atual é um par novo, gerado nesse deploy — o par anterior
+// (o que só tinha a pública em VITE_VAPID_PUBLIC_KEY) tinha a privada
+// perdida, nunca foi salva em lugar nenhum. Quem já tinha ativado
+// notificação antes precisa reativar (a inscrição antiga não bate mais com
+// a chave nova).
 //
 // Chamada esperada (POST, JSON):
 //   { "userId": "uuid-da-conta", "titulo": "...", "corpo": "...", "url": "/app.html" }
 //
-// Quem dispara essa chamada é o próximo passo depois do deploy — por
-// exemplo, trocar o TODO de hc_notificar_fisios (supabase/schema-atual.sql)
-// por uma chamada via pg_net, ou o próprio frontend depois de
-// hc_fechar_agendamento/hc_criar_pedido. Não fiz isso ainda porque chamar
-// uma função que não existe em produção só quebraria o fluxo — é o passo
-// seguinte, depois que isto estiver implantado.
+// Quem dispara: supabase/migration-2026-08-02-push-triggers.sql — triggers
+// em agendamentos (INSERT) e mensagens (INSERT) chamam esta função via
+// pg_net.http_post(), assíncrono, sem travar a transação que escreveu a
+// linha.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
