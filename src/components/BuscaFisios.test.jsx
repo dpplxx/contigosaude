@@ -9,17 +9,19 @@ vi.mock('../lib/supabase', () => ({
 }))
 
 vi.mock('../lib/api', () => ({
-  criarPedido: vi.fn(),
+  avaliacoesFisio: vi.fn(),
+  denunciarAvaliacao: vi.fn(),
+  registrarEventoMarketplace: vi.fn(),
 }))
 
 describe('BuscaFisios', () => {
   it('renderiza o formulário inicial', () => {
     render(<BuscaFisios />)
     expect(screen.getByText('Busque um fisioterapeuta perto de você')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Ex: Maria Silva')).toBeInTheDocument()
+    expect(screen.getByText('Cidade')).toBeInTheDocument()
   })
 
-  it('desabilita botão sem cidade/bairro/whatsapp', () => {
+  it('desabilita botão sem cidade/bairro', () => {
     render(<BuscaFisios />)
     const button = screen.getByRole('button', { name: /Buscar profissionais/i })
     expect(button).toBeDisabled()

@@ -5,7 +5,6 @@ import { CepInput } from "./Compartilhados";
 import { ESPECIALIDADES_PACIENTE, URGENCIAS, mensagemDeErro, tempoRelativo, waLink } from "../lib/utils";
 import { supabase } from "../lib/supabase";
 import {
-  criarPedido,
   avaliacoesFisio,
   denunciarAvaliacao,
   registrarEventoMarketplace,
@@ -24,8 +23,6 @@ const MOTIVOS_DENUNCIA = [
 ];
 
 const BUSCA_INITIAL = {
-  nome: "",
-  whatsapp: "",
   especialidade: ESPECIALIDADES_PACIENTE[0],
   urgencia: URGENCIAS[0],
   cep: "",
@@ -97,10 +94,8 @@ export function BuscaFisios() {
     setFisios(null);
 
     try {
-      // Cria o pedido no Supabase para registrar a demanda
-      await criarPedido(form);
-
-      // Rastreia eventos de busca
+      // Rastreia a intenção de busca.
+      // A busca é pública e não cria pedido.
       trackEvent(Events.SEARCH_PERFORMED, {
         especialidade: form.especialidade,
         cidade: form.cidade,
@@ -109,7 +104,7 @@ export function BuscaFisios() {
       trackEvent(Events.SPECIALTY_SEARCHED, { especialidade: form.especialidade });
       trackEvent(Events.LOCATION_SEARCHED, { cidade: form.cidade, bairro: form.bairro });
 
-      // Busca os fisios compatíveis
+      // Busca os fisioterapeutas compatíveis.
       const { data, error } = await supabase.rpc("hc_listar_fisios", {
         p_especialidade: form.especialidade,
         p_cidade: form.cidade,
@@ -162,8 +157,8 @@ export function BuscaFisios() {
     }
   };
 
-  if (form.whatsapp && fisios !== null) {
-    return <ListaFisios fisios={fisios} onVoltar={() => setFisios(null)} whatsappPaciente={form.whatsapp} />;
+  if (fisios !== null) {
+    return <ListaFisios fisios={fisios} onVoltar={() => setFisios(null)} />;
   }
 
   return (
@@ -186,38 +181,11 @@ export function BuscaFisios() {
             style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }}
           />
 
-          <Field label="Seu nome (ou quem vai receber o atendimento)">
-            <TextInput
-              value={form.nome}
-              onChange={set("nome")}
-              placeholder="Ex: Maria Silva"
-            />
-          </Field>
-
-          <Field label="WhatsApp para contato">
-            <TextInput
-              value={form.whatsapp}
-              onChange={set("whatsapp")}
-              placeholder="Ex: (11) 98765-4321"
-              disabled={loading}
-            />
-          </Field>
-
           <Field label="Tipo de atendimento">
             <SelectInput value={form.especialidade} onChange={set("especialidade")}>
               {ESPECIALIDADES_PACIENTE.map((e) => (
                 <option key={e} value={e}>
                   {e}
-                </option>
-              ))}
-            </SelectInput>
-          </Field>
-
-          <Field label="Quando você precisa do atendimento?">
-            <SelectInput value={form.urgencia} onChange={set("urgencia")}>
-              {URGENCIAS.map((u) => (
-                <option key={u} value={u}>
-                  {u}
                 </option>
               ))}
             </SelectInput>
@@ -265,7 +233,6 @@ export function BuscaFisios() {
               loading ||
               !form.cidade ||
               !form.bairro ||
-              !form.whatsapp ||
               (turnstileConfigurado() && !turnstileToken)
             }
           >
@@ -283,7 +250,7 @@ export function BuscaFisios() {
   );
 }
 
-function ListaFisios({ fisios, onVoltar, whatsappPaciente }) {
+function ListaFisios({ fisios, onVoltar }) {
   return (
     <div className="space-y-4">
       <Card>
@@ -303,7 +270,7 @@ function ListaFisios({ fisios, onVoltar, whatsappPaciente }) {
         ) : (
           <div className="grid gap-4">
             {fisios.map((fisio) => (
-              <CartaFisio key={fisio.id} fisio={fisio} whatsappPaciente={whatsappPaciente} />
+              <CartaFisio key={fisio.id} fisio={fisio} />
             ))}
           </div>
         )}
@@ -462,14 +429,12 @@ function AvaliacoesFisio({ fisioId }) {
   );
 }
 
-function CartaFisio({ fisio, whatsappPaciente }) {
+function CartaFisio({ fisio }) {
   const [copiado, setCopiado] = useState(false);
 
   const handleWhatsAppClick = () => {
     trackEvent(Events.WHATSAPP_CLICKED, {
       fisio_id: fisio.id,
-      fisio_nome: fisio.nome,
-      paciente_whatsapp: whatsappPaciente,
     });
     registrarEventoMarketplace({
       tipo: "whatsapp_clique",
