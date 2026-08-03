@@ -192,6 +192,24 @@ export async function registrarEventoMarketplace({
 }
 
 // ---------------------------------------------------------------------------
+// Perfil público individual
+// ---------------------------------------------------------------------------
+
+export async function obterFisioPublico(fisioId) {
+  if (!fisioId) {
+    throw new Error("Profissional não informado.");
+  }
+
+  const data = await rpc("hc_obter_fisio_publico", { p_fisio_id: fisioId });
+
+  if (!data) {
+    throw new Error("Profissional não encontrado.");
+  }
+
+  return data;
+}
+
+// ---------------------------------------------------------------------------
 // Confiança pública — dados usados na landing e nos cards de fisio
 // ---------------------------------------------------------------------------
 

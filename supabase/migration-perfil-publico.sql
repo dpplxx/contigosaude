@@ -33,6 +33,8 @@ as $$
     'crefito_uf', f.crefito_uf,
     'crefito_status', f.crefito_status,
     'especialidades', f.especialidades,
+    'resumo', f.resumo,
+    'disponibilidade', f.disponibilidade,
     'nota_media', (
       select round(avg(a.nota)::numeric, 1) from avaliacoes a
       where a.fisio_id = f.id and a.status = 'publicada'

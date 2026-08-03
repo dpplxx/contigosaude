@@ -8,6 +8,7 @@ import {
   avaliacoesFisio,
   denunciarAvaliacao,
   registrarEventoMarketplace,
+  obterFisioPublico,
 } from "../lib/api";
 import { normalizarTexto } from "../lib/normalizacao";
 import { TurnstileWidget, turnstileConfigurado } from "../lib/turnstile";
@@ -82,24 +83,21 @@ export function BuscaFisios() {
       setErro("");
 
       try {
-        const { data, error } = await supabase.rpc("hc_obter_fisio_publico", {
-          p_fisio_id: fisioId,
-        });
+        const fisio = await obterFisioPublico(fisioId);
 
-        if (error) throw error;
+        if (!ativo) return;
 
-        if (!data) {
-          throw new Error("Profissional não encontrado.");
-        }
-
-        if (ativo) {
-          setFisioCompartilhado(data);
-        }
+        setFisioCompartilhado(fisio);
 
         trackEvent(Events.PROFILE_OPENED, {
-          fisio_id: fisioId,
-          origem: "link_compartilhado",
+          fisio_id: fisio.id,
+          origem: "link_direto",
         });
+
+        registrarEventoMarketplace({
+          tipo: "resultado_exibido",
+          fisioId: fisio.id,
+        }).catch(() => {});
       } catch (e) {
         if (ativo) {
           setErro(mensagemDeErro(e, "Não foi possível carregar o perfil do profissional."));
@@ -681,6 +679,8 @@ function CartaFisio({ fisio }) {
 }
 
 function PerfilCompartilhado({ fisio, onVoltar }) {
+  const [copiado, setCopiado] = useState(false);
+
   const handleWhatsAppClick = () => {
     trackEvent(Events.WHATSAPP_CLICKED, {
       fisio_id: fisio.id,
@@ -691,6 +691,30 @@ function PerfilCompartilhado({ fisio, onVoltar }) {
       tipo: "whatsapp_clique",
       fisioId: fisio.id,
     }).catch(() => {});
+  };
+
+  const handleShare = async () => {
+    trackEvent(Events.PROFILE_SHARED, { fisio_id: fisio.id });
+
+    const url = `${window.location.origin}${window.location.pathname}?fisio=${encodeURIComponent(fisio.id)}`;
+    const texto = `${fisio.nome} — fisioterapeuta${fisio.bairro ? ` em ${fisio.bairro}` : ""}. Encontrei no Contigo Saúde:`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: fisio.nome, text: texto, url });
+        return;
+      }
+    } catch {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(`${texto} ${url}`);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      // Sem clipboard disponível — sem fallback melhor aqui.
+    }
   };
 
   return (
@@ -773,6 +797,15 @@ function PerfilCompartilhado({ fisio, onVoltar }) {
             </div>
           )}
 
+          {fisio.resumo && (
+            <div className="w-full text-left mt-6">
+              <h2 className="font-medium mb-2">Sobre o profissional</h2>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--muted1)" }}>
+                {fisio.resumo}
+              </p>
+            </div>
+          )}
+
           <a
             href={waLink(
               fisio.whatsapp,
@@ -787,6 +820,15 @@ function PerfilCompartilhado({ fisio, onVoltar }) {
             <MessageCircle size={18} />
             Falar com {fisio.nome.split(" ")[0]} pelo WhatsApp
           </a>
+
+          <button
+            onClick={handleShare}
+            className="flex items-center justify-center gap-2 w-full mt-3 px-4 py-3 rounded-lg font-medium border"
+            style={{ borderColor: "var(--border)", color: "var(--muted1)" }}
+          >
+            {copiado ? <Check size={18} /> : <Share2 size={18} />}
+            {copiado ? "Copiado!" : "Compartilhar perfil"}
+          </button>
         </div>
       </Card>
 
