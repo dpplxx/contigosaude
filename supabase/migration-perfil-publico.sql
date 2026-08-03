@@ -3,12 +3,16 @@
 -- Perfil público individual do profissional
 --
 -- Ajustado contra o schema real de public.fisios (conferido via psql
--- antes de rodar): a tabela não tem "ativo" (tem deletado_em), não tem
--- "bairro" singular (tem bairros[], um array), e não tem nota_media
--- nem total_avaliacoes como coluna — são calculadas a partir de
+-- antes de rodar): a tabela não tem "ativo" (tem deletado_em), e não tem
+-- nota_media nem total_avaliacoes como coluna — são calculadas a partir de
 -- avaliacoes, do mesmo jeito que hc_listar_fisios já faz. Mesmo
 -- filtro de status = 'publicada' usado lá, pra não contar avaliação
 -- removida por moderação.
+--
+-- 'bairros' vai como array completo (não só bairros[1]): o perfil
+-- individual é a página certa pra mostrar todas as regiões que o
+-- profissional atende, diferente do card da lista de busca que mostra só
+-- a mais próxima por espaço.
 -- ============================================================
 
 create or replace function public.hc_obter_fisio_publico(
@@ -26,7 +30,7 @@ as $$
     'formacao', f.formacao,
     'foto_url', f.foto_url,
     'whatsapp', f.whatsapp,
-    'bairro', (f.bairros[1]),
+    'bairros', f.bairros,
     'cidade', f.cidade,
     'uf', f.uf,
     'crefito', f.crefito,

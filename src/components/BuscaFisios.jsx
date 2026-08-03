@@ -712,7 +712,7 @@ function PerfilCompartilhado({ fisio, onVoltar }) {
     trackEvent(Events.PROFILE_SHARED, { fisio_id: fisio.id });
 
     const url = `${window.location.origin}${window.location.pathname}?fisio=${encodeURIComponent(fisio.id)}`;
-    const texto = `${fisio.nome} — fisioterapeuta${fisio.bairro ? ` em ${fisio.bairro}` : ""}. Encontrei no Contigo Saúde:`;
+    const texto = `${fisio.nome} — fisioterapeuta${fisio.bairros?.[0] ? ` em ${fisio.bairros[0]}` : ""}. Encontrei no Contigo Saúde:`;
 
     try {
       if (navigator.share) {
@@ -763,12 +763,12 @@ function PerfilCompartilhado({ fisio, onVoltar }) {
             </p>
           )}
 
-          {fisio.bairro && (
-            <div className="flex items-center gap-1 text-sm mt-3" style={{ color: "var(--muted1)" }}>
+          {fisio.bairros?.length > 0 && (
+            <div className="flex items-center gap-1 text-sm mt-3 text-center" style={{ color: "var(--muted1)" }}>
               <MapPin size={15} />
-              {fisio.bairro}
-              {fisio.cidade ? `, ${fisio.cidade}` : ""}
-              {fisio.uf ? ` - ${fisio.uf}` : ""}
+              {fisio.bairros.join(", ")}
+              {fisio.cidade ? ` — ${fisio.cidade}` : ""}
+              {fisio.uf ? `, ${fisio.uf}` : ""}
             </div>
           )}
 
@@ -777,12 +777,12 @@ function PerfilCompartilhado({ fisio, onVoltar }) {
               {fisio.crefito_status === "verificado" ? (
                 <span className="flex items-center gap-1 text-sm" style={{ color: "#2FAE72" }}>
                   <ShieldCheck size={15} />
-                  CREFITO verificado{fisio.crefito_uf ? ` (${fisio.crefito_uf})` : ""}
+                  CREFITO {fisio.crefito}{fisio.crefito_uf ? `/${fisio.crefito_uf}` : ""} · verificado
                 </span>
               ) : (
                 <span className="flex items-center gap-1 text-sm" style={{ color: "var(--muted1)" }}>
                   <ShieldCheck size={15} />
-                  CREFITO informado
+                  CREFITO {fisio.crefito}{fisio.crefito_uf ? `/${fisio.crefito_uf}` : ""} · informado
                 </span>
               )}
             </div>
