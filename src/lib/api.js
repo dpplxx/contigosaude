@@ -189,6 +189,21 @@ export async function sair() {
   await cliente().auth.signOut();
 }
 
+// O link do email de recuperação volta para a própria página onde a pessoa
+// pediu — assim funciona igual para o login de paciente e de fisio, sem
+// precisar saber de antemão qual dos dois é.
+export async function recuperarSenha(email) {
+  const { error } = await cliente().auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: window.location.origin + window.location.pathname,
+  });
+  if (error) throw error;
+}
+
+export async function definirNovaSenha(novaSenha) {
+  const { error } = await cliente().auth.updateUser({ password: novaSenha });
+  if (error) throw error;
+}
+
 export async function sessaoAtual() {
   if (!supabaseConfigurado) return null;
   const { data } = await supabase.auth.getSession();
@@ -197,8 +212,8 @@ export async function sessaoAtual() {
 
 export function aoMudarSessao(callback) {
   if (!supabaseConfigurado) return () => {};
-  const { data } = supabase.auth.onAuthStateChange((_evento, sessao) => {
-    callback(sessao);
+  const { data } = supabase.auth.onAuthStateChange((evento, sessao) => {
+    callback(sessao, evento);
   });
   return () => data.subscription.unsubscribe();
 }

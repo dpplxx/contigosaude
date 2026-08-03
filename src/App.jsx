@@ -13,7 +13,7 @@ import {
 import { Card, RoleButton, ToastContainer } from "./components/ui";
 import { RequestForm } from "./components/Paciente";
 import { PhysioForm } from "./components/Fisio";
-import { AuthEmail } from "./components/AuthEmail";
+import { AuthEmail, DefinirNovaSenha } from "./components/AuthEmail";
 import { Painel } from "./components/Painel";
 import { Login } from "./components/Login";
 
@@ -145,6 +145,7 @@ export default function App() {
   const [loadingPainel, setLoadingPainel] = useState(false);
   const [erroPainel, setErroPainel] = useState("");
   const [autorizada, setAutorizada] = useState(true);
+  const [recuperandoSenha, setRecuperandoSenha] = useState(false);
 
   const addToast = useCallback((msg, tipo = "ok") => {
     const id = uid();
@@ -181,7 +182,13 @@ export default function App() {
     initSession();
     trackEvent(Events.PAGE_VIEW);
     sessaoAtual().then(setSessao);
-    return aoMudarSessao(setSessao);
+    // O link de "esqueci a senha" volta pra cá com uma sessão temporária de
+    // recuperação — sem essa checagem, a trava normal de "!sessao" some e a
+    // pessoa cairia direto no app em vez de poder escolher a senha nova.
+    return aoMudarSessao((sessaoNova, evento) => {
+      setSessao(sessaoNova);
+      if (evento === "PASSWORD_RECOVERY") setRecuperandoSenha(true);
+    });
   }, []);
 
   // Painel/Métricas só aparecem na navegação para quem é admin de verdade —
@@ -269,70 +276,83 @@ export default function App() {
         onSair={fazerLogout}
       />
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 flex gap-2 pb-3 flex-wrap">
-        {(!souFisio || souAdmin) && (
-          <RoleButton active={role === "paciente"} onClick={() => setRole("paciente")}>
-            <Home size={16} /> Sou paciente
+      {!recuperandoSenha && (
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 flex gap-2 pb-3 flex-wrap">
+          {(!souFisio || souAdmin) && (
+            <RoleButton active={role === "paciente"} onClick={() => setRole("paciente")}>
+              <Home size={16} /> Sou paciente
+            </RoleButton>
+          )}
+          <RoleButton active={role === "fisio"} onClick={() => setRole("fisio")}>
+            <Stethoscope size={16} /> Sou fisioterapeuta
           </RoleButton>
-        )}
-        <RoleButton active={role === "fisio"} onClick={() => setRole("fisio")}>
-          <Stethoscope size={16} /> Sou fisioterapeuta
-        </RoleButton>
-        {souAdmin && (
-          <>
-            <RoleButton active={role === "painel"} onClick={() => setRole("painel")}>
-              <ClipboardList size={16} /> Painel
-            </RoleButton>
-            <RoleButton active={role === "metricas"} onClick={() => setRole("metricas")}>
-              <BarChart3 size={16} /> Métricas
-            </RoleButton>
-          </>
-        )}
-      </div>
+          {souAdmin && (
+            <>
+              <RoleButton active={role === "painel"} onClick={() => setRole("painel")}>
+                <ClipboardList size={16} /> Painel
+              </RoleButton>
+              <RoleButton active={role === "metricas"} onClick={() => setRole("metricas")}>
+                <BarChart3 size={16} /> Métricas
+              </RoleButton>
+            </>
+          )}
+        </div>
+      )}
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 pb-16 space-y-4">
         {!supabaseConfigurado && <AvisoSemChaves />}
 
-        {role === "paciente" && !sessao && !fisioNaUrl && (
-          <AuthEmail tipo="paciente" onAutenticado={() => addToast("Bem-vinda!")} />
-        )}
-        {role === "paciente" && (sessao || fisioNaUrl) && <RequestForm />}
-
-        {role === "fisio" && !sessao && (
-          <AuthEmail tipo="fisio" onAutenticado={() => addToast("Bem-vindo!")} />
-        )}
-        {role === "fisio" && sessao && <PhysioForm onToast={addToast} />}
-
-        {areaRestrita && !sessao && <Login onEntrou={setSessao} />}
-        {areaRestrita && sessao && !autorizada && (
-          <Card>
-            <p className="text-sm" style={{ color: "var(--muted1)" }}>
-              Esta conta está logada, mas não tem permissão para ver os dados dos pacientes. Para
-              liberar, adicione o email dela na tabela <code>admins</code> do Supabase (o passo a
-              passo está no README do projeto).
-            </p>
-          </Card>
-        )}
-        {role === "painel" && sessao && autorizada && (
-          <Painel
-            dados={dadosPainel}
-            loading={loadingPainel}
-            erro={erroPainel}
-            onRefresh={recarregarPainel}
+        {recuperandoSenha ? (
+          <DefinirNovaSenha
+            onConcluido={() => {
+              setRecuperandoSenha(false);
+              addToast("Senha atualizada! Você já está logada.");
+            }}
           />
-        )}
-        {role === "metricas" && sessao && autorizada && (
-          <Suspense
-            fallback={
+        ) : (
+          <>
+            {role === "paciente" && !sessao && !fisioNaUrl && (
+              <AuthEmail tipo="paciente" onAutenticado={() => addToast("Bem-vinda!")} />
+            )}
+            {role === "paciente" && (sessao || fisioNaUrl) && <RequestForm />}
+
+            {role === "fisio" && !sessao && (
+              <AuthEmail tipo="fisio" onAutenticado={() => addToast("Bem-vindo!")} />
+            )}
+            {role === "fisio" && sessao && <PhysioForm onToast={addToast} />}
+
+            {areaRestrita && !sessao && <Login onEntrou={setSessao} />}
+            {areaRestrita && sessao && !autorizada && (
               <Card>
                 <p className="text-sm" style={{ color: "var(--muted1)" }}>
-                  Carregando gráficos...
+                  Esta conta está logada, mas não tem permissão para ver os dados dos pacientes.
+                  Para liberar, adicione o email dela na tabela <code>admins</code> do Supabase (o
+                  passo a passo está no README do projeto).
                 </p>
               </Card>
-            }
-          >
-            <Metricas dados={dadosPainel} />
-          </Suspense>
+            )}
+            {role === "painel" && sessao && autorizada && (
+              <Painel
+                dados={dadosPainel}
+                loading={loadingPainel}
+                erro={erroPainel}
+                onRefresh={recarregarPainel}
+              />
+            )}
+            {role === "metricas" && sessao && autorizada && (
+              <Suspense
+                fallback={
+                  <Card>
+                    <p className="text-sm" style={{ color: "var(--muted1)" }}>
+                      Carregando gráficos...
+                    </p>
+                  </Card>
+                }
+              >
+                <Metricas dados={dadosPainel} />
+              </Suspense>
+            )}
+          </>
         )}
       </main>
     </div>
