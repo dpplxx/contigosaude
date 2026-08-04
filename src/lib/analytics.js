@@ -38,4 +38,5 @@ export const Events = {
   PROFILE_SHARED: "profile_shared",
   SIGNUP_STARTED: "signup_started",
   SIGNUP_COMPLETED: "signup_completed",
+  REVIEW_SUBMITTED: "review_submitted",
 };

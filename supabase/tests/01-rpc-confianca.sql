@@ -127,13 +127,50 @@ begin
 end $$;
 
 -- ----------------------------------------------------------------------------
--- hc_avaliar: paciente avalia normalmente
+-- hc_meus_pedidos: agendamento.avaliado começa false, antes de qualquer
+-- avaliação
 -- ----------------------------------------------------------------------------
 
 set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
 do $$
+declare
+  v_avaliado boolean;
+begin
+  select (p.value -> 'agendamento' ->> 'avaliado')::boolean
+  into v_avaliado
+  from jsonb_array_elements(hc_meus_pedidos()) p
+  where p.value ->> 'id' = '55555555-5555-5555-5555-555555555555';
+
+  if v_avaliado is distinct from false then
+    raise exception 'TESTE FALHOU: hc_meus_pedidos deveria marcar avaliado=false antes da avaliação';
+  end if;
+end $$;
+
+-- ----------------------------------------------------------------------------
+-- hc_avaliar: paciente avalia normalmente
+-- ----------------------------------------------------------------------------
+
+do $$
 begin
   perform hc_avaliar('33333333-3333-3333-3333-333333333333', 5, 'Ótimo atendimento');
+end $$;
+
+-- ----------------------------------------------------------------------------
+-- hc_meus_pedidos: agendamento.avaliado vira true depois de hc_avaliar
+-- ----------------------------------------------------------------------------
+
+do $$
+declare
+  v_avaliado boolean;
+begin
+  select (p.value -> 'agendamento' ->> 'avaliado')::boolean
+  into v_avaliado
+  from jsonb_array_elements(hc_meus_pedidos()) p
+  where p.value ->> 'id' = '55555555-5555-5555-5555-555555555555';
+
+  if v_avaliado is distinct from true then
+    raise exception 'TESTE FALHOU: hc_meus_pedidos deveria marcar avaliado=true depois da avaliação';
+  end if;
 end $$;
 
 -- ----------------------------------------------------------------------------

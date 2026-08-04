@@ -191,6 +191,24 @@ export function StarRow({ value, size = 14 }) {
   );
 }
 
+export function StarInput({ value, onChange, size = 26 }) {
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onChange(n)}
+          aria-label={`${n} estrela${n > 1 ? "s" : ""}`}
+          className="p-0.5"
+        >
+          <Star size={size} fill={n <= value ? "#16C4A8" : "none"} style={{ color: "#16C4A8" }} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function ErroInline({ children }) {
   if (!children) return null;
   return (

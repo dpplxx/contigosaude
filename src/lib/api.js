@@ -82,6 +82,15 @@ export async function registrarClique(fisioId) {
 }
 
 // ---------------------------------------------------------------------------
+// Área do paciente logado
+// ---------------------------------------------------------------------------
+
+export async function meusPedidos() {
+  const data = await rpc("hc_meus_pedidos");
+  return data || [];
+}
+
+// ---------------------------------------------------------------------------
 // Analytics do marketplace
 // ---------------------------------------------------------------------------
 
@@ -162,6 +171,14 @@ export async function contarFisios() {
 export async function avaliacoesFisio(fisioId) {
   const data = await rpc("hc_avaliacoes_fisio", { p_fisio_id: fisioId });
   return data || [];
+}
+
+export function avaliar({ fisioId, nota, comentario }) {
+  return rpc("hc_avaliar", {
+    p_fisio_id: fisioId,
+    p_nota: nota,
+    p_comentario: comentario || null,
+  });
 }
 
 export function denunciarAvaliacao({ avaliacaoId, motivo, detalhes }) {

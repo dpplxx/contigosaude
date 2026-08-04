@@ -314,7 +314,7 @@ export default function App() {
             {role === "paciente" && !sessao && !fisioNaUrl && (
               <AuthEmail tipo="paciente" onAutenticado={() => addToast("Bem-vinda!")} />
             )}
-            {role === "paciente" && (sessao || fisioNaUrl) && <RequestForm />}
+            {role === "paciente" && (sessao || fisioNaUrl) && <RequestForm sessao={sessao} />}
 
             {role === "fisio" && !sessao && (
               <AuthEmail tipo="fisio" onAutenticado={() => addToast("Bem-vindo!")} />
