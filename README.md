@@ -1,4 +1,4 @@
-# Fisio em Casa
+# Contigo Saúde
 
 Marketplace de fisioterapia domiciliar. O paciente pede atendimento, o
 fisioterapeuta se cadastra, e o Painel faz o meio de campo: encontra quem
@@ -21,7 +21,7 @@ O site tem duas páginas:
 ## 1. Criar o projeto no Supabase
 
 1. Entre em [supabase.com](https://supabase.com) → **New project**
-2. Nome sugerido: `fisio-em-casa`. Região: **South America (São Paulo)**
+2. Nome sugerido: `contigo-saude`. Região: **South America (São Paulo)**
 3. Guarde a senha do banco que ele pedir para criar (você não vai precisar dela
    no dia a dia, mas perder dá trabalho)
 
@@ -101,15 +101,15 @@ Abra o endereço que aparecer (normalmente `http://localhost:5173`).
 **Criar o repositório**
 
 1. Em [github.com/new](https://github.com/new), crie um repositório chamado
-   `fisio-em-casa`, público, **sem** README
+   `contigosaude`, público, **sem** README
 2. No terminal, dentro da pasta do projeto:
 
 ```bash
-git init && git add . && git commit -m "Fisio em Casa"
+git init && git add . && git commit -m "Contigo Saúde"
 ```
 
 ```bash
-git branch -M main && git remote add origin https://github.com/SEU-USUARIO/fisio-em-casa.git && git push -u origin main
+git branch -M main && git remote add origin https://github.com/SEU-USUARIO/contigosaude.git && git push -u origin main
 ```
 
 **Guardar as chaves no GitHub**
@@ -127,7 +127,7 @@ repository secret**. Crie duas:
 **Settings** → **Pages** → em **Source**, escolha **GitHub Actions**.
 
 Pronto. Vá em **Actions** e acompanhe o build; quando ficar verde, o site está
-em `https://SEU-USUARIO.github.io/fisio-em-casa/`.
+em `https://SEU-USUARIO.github.io/contigosaude/`.
 
 Daí em diante, toda vez que você quiser publicar uma mudança:
 

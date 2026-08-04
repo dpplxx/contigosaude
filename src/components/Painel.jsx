@@ -530,7 +530,7 @@ function RequestCard({ r, fisios, agendamentos, area, onRefresh, onArchive }) {
         <a
           href={waLink(
             r.whatsapp,
-            `Olá ${r.nome}, vi seu pedido de atendimento domiciliar no Fisio em Casa!`
+            `Olá ${r.nome}, vi seu pedido de atendimento domiciliar no Contigo Saúde!`
           )}
           target="_blank"
           rel="noopener noreferrer"
@@ -608,7 +608,7 @@ export function Painel({ dados, loading, erro, onRefresh }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `fisio-em-casa-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `contigo-saude-backup-${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -827,7 +827,7 @@ export function Painel({ dados, loading, erro, onRefresh }) {
                     <RatingWidget fisioId={p.id} onSubmitted={onRefresh} />
                   </div>
                   <a
-                    href={waLink(p.whatsapp, `Olá ${p.nome}, obrigado por se cadastrar no Fisio em Casa!`)}
+                    href={waLink(p.whatsapp, `Olá ${p.nome}, obrigado por se cadastrar no Contigo Saúde!`)}
                     onClick={() => registrarClique(p.id)}
                     target="_blank"
                     rel="noopener noreferrer"

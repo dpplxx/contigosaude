@@ -1,17 +1,22 @@
 {
-  "name": "fisio-em-casa",
+  "name": "contigo-saude",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:mobile": "vite build --mode capacitor",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
     "@sentry/react": "^10.69.0",
     "@supabase/supabase-js": "^2.111.0",
     "lucide-react": "^1.27.0",

@@ -2,13 +2,13 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "fisio-em-casa",
+      "name": "contigo-saude",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5173
     },
     {
-      "name": "fisio-em-casa-preview",
+      "name": "contigo-saude-preview",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "preview"],
       "port": 4173

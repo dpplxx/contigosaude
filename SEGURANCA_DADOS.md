@@ -1,4 +1,4 @@
-# Plano de Segurança de Dados - Fisio em Casa
+# Plano de Segurança de Dados - Contigo Saúde
 
 ## 📋 Status Atual (Protótipo)
 
