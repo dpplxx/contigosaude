@@ -75,6 +75,26 @@ export function formatDataHora(data, horario) {
   return horaFmt ? `${dataFmt} às ${horaFmt}` : dataFmt;
 }
 
+// "data" vem do Postgres como "AAAA-MM-DD" — construir o Date a partir das
+// partes (em vez de "new Date(data)") evita o Date interpretar como UTC e
+// mostrar o dia anterior em fusos negativos (ex.: Brasil).
+export function diasDesdeData(data) {
+  if (!data) return 0;
+  const [ano, mes, dia] = data.split("-").map(Number);
+  const entao = new Date(ano, mes - 1, dia);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  entao.setHours(0, 0, 0, 0);
+  return Math.floor((hoje - entao) / 86400000);
+}
+
+export function dataMaisDias(data, dias) {
+  const [ano, mes, dia] = data.split("-").map(Number);
+  const d = new Date(ano, mes - 1, dia);
+  d.setDate(d.getDate() + dias);
+  return d.toLocaleDateString("pt-BR");
+}
+
 export function tempoRelativo(iso) {
   if (!iso) return "";
   const diffMs = Date.now() - new Date(iso).getTime();

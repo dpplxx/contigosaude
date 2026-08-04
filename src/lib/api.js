@@ -314,6 +314,13 @@ export function atualizarStatusAgendamentoPainel(id, status) {
   });
 }
 
+// O próprio fisio (fora do Painel do admin) marca um atendimento como
+// concluído ou cancelado — hc_marcar_status_agendamento confere que o
+// agendamento pertence à conta logada antes de aceitar.
+export function marcarStatusAgendamento(id, status) {
+  return rpc("hc_marcar_status_agendamento", { p_agendamento_id: id, p_status: status });
+}
+
 export function avaliarPeloPainel({ fisioId, nota, comentario, nomeAvaliador }) {
   return rpc("hc_admin_avaliar", {
     p_fisio_id: fisioId,

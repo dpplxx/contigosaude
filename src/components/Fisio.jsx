@@ -13,15 +13,22 @@ import {
   PhoneInput,
   PrimaryButton,
   SelectInput,
+  StatusBadge,
   TagInput,
   TextArea,
   TextInput,
+  Vazio,
 } from "./ui";
 import { CepInput } from "./Compartilhados";
 import { EthicalCheckbox, PrototypeWarning } from "./Ethics";
-import { cadastrarFisio, enviarFotoFisio, meuPainelFisio } from "../lib/api";
+import {
+  cadastrarFisio,
+  enviarFotoFisio,
+  marcarStatusAgendamento,
+  meuPainelFisio,
+} from "../lib/api";
 import { trackEvent, Events } from "../lib/analytics";
-import { ESPECIALIDADES_FISIO, mensagemDeErro } from "../lib/utils";
+import { ESPECIALIDADES_FISIO, formatDataHora, mensagemDeErro } from "../lib/utils";
 import { TurnstileWidget, turnstileConfigurado } from "../lib/turnstile";
 import {
   CODIGO_ETICA_CREFITO,
@@ -61,6 +68,70 @@ const PHYSIO_INITIAL = {
 
 const RAIOS = [3, 5, 10, 15, 20, 30, 50];
 
+function CartaAgendamentoFisio({ agendamento, onAtualizado }) {
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState("");
+  const p = agendamento.pedido;
+
+  const marcar = async (status) => {
+    setSalvando(true);
+    setErro("");
+    try {
+      await marcarStatusAgendamento(agendamento.id, status);
+      onAtualizado(agendamento.id, status);
+    } catch (e) {
+      setErro(mensagemDeErro(e, "Não foi possível atualizar o status."));
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="py-3" style={{ borderTop: "1px solid var(--border)" }}>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium" style={{ color: "var(--text)" }}>
+            {p.nome}
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--muted3)" }}>
+            {p.especialidade}
+            {p.bairro ? ` · ${p.bairro}` : ""}
+            {p.cidade ? `, ${p.cidade}` : ""}
+            {p.distancia_km != null ? ` · ${p.distancia_km} km` : ""}
+          </p>
+        </div>
+        <StatusBadge status={agendamento.status} />
+      </div>
+      <p className="text-xs mt-1.5" style={{ color: "var(--muted1)" }}>
+        {formatDataHora(agendamento.data, agendamento.horario)}
+      </p>
+      <ErroInline>{erro}</ErroInline>
+      {agendamento.status === "agendado" && (
+        <div className="flex gap-2 mt-2">
+          <button
+            type="button"
+            onClick={() => marcar("concluido")}
+            disabled={salvando}
+            className="text-xs px-3 py-1.5 rounded-full disabled:opacity-50"
+            style={{ background: "#009E86", color: "#FFFFFF" }}
+          >
+            Marcar como concluído
+          </button>
+          <button
+            type="button"
+            onClick={() => marcar("cancelado")}
+            disabled={salvando}
+            className="text-xs px-3 py-1.5 rounded-lg disabled:opacity-50"
+            style={{ color: "var(--muted1)" }}
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function PhysioForm({ onToast }) {
   const [form, setForm] = useState(PHYSIO_INITIAL);
   const [saving, setSaving] = useState(false);
@@ -70,6 +141,7 @@ export function PhysioForm({ onToast }) {
   const [enviandoFoto, setEnviandoFoto] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
   const [crefitoStatus, setCrefitoStatus] = useState(null);
+  const [agendamentos, setAgendamentos] = useState([]);
   const fileInputRef = useRef(null);
 
   // Se a conta já tem cadastro, abre o formulário preenchido em vez de em
@@ -109,6 +181,7 @@ export function PhysioForm({ onToast }) {
           declaracaoResponsabilidade: true,
         });
         setCrefitoStatus(f.crefito_status || null);
+        setAgendamentos(dados.agendamentos || []);
         setEditando(true);
       })
       .catch(() => {
@@ -145,6 +218,13 @@ export function PhysioForm({ onToast }) {
         ? f.especialidades.filter((x) => x !== esp)
         : [...f.especialidades, esp],
     }));
+  };
+
+  const atualizarStatusAgendamentoLocal = (id, status) => {
+    setAgendamentos((lista) => lista.map((a) => (a.id === id ? { ...a, status } : a)));
+    onToast?.(
+      status === "concluido" ? "Atendimento marcado como concluído!" : "Atendimento cancelado."
+    );
   };
 
   // O upload acontece na hora que a pessoa escolhe o arquivo, sem precisar
@@ -229,6 +309,27 @@ export function PhysioForm({ onToast }) {
   return (
     <div className="space-y-4">
       <PrototypeWarning />
+
+      {editando && (
+        <Card>
+          <h2 className="text-lg font-medium mb-1">Seus atendimentos</h2>
+          <p className="text-sm mb-1" style={{ color: "var(--muted1)" }}>
+            Pacientes que fecharam atendimento com você.
+          </p>
+          {agendamentos.length === 0 ? (
+            <Vazio>Você ainda não tem nenhum atendimento fechado.</Vazio>
+          ) : (
+            agendamentos.map((ag) => (
+              <CartaAgendamentoFisio
+                key={ag.id}
+                agendamento={ag}
+                onAtualizado={atualizarStatusAgendamentoLocal}
+              />
+            ))
+          )}
+        </Card>
+      )}
+
       <Card>
         <h2 className="text-lg font-medium mb-1">
           {editando ? "Seu cadastro" : "Cadastre-se como fisioterapeuta"}

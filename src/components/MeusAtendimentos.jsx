@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, MapPin, Stethoscope } from "lucide-react";
 import { Card, ErroInline, StarInput, StatusBadge, TextArea, Vazio } from "./ui";
 import { avaliar, meusPedidos } from "../lib/api";
-import { formatDataHora, mensagemDeErro } from "../lib/utils";
+import { dataMaisDias, diasDesdeData, formatDataHora, mensagemDeErro } from "../lib/utils";
 import { trackEvent, Events } from "../lib/analytics";
 
-function AvaliarAtendimento({ agendamento, onAvaliado }) {
+export function AvaliarAtendimento({ agendamento, onAvaliado, comBorda = true }) {
   const [nota, setNota] = useState(0);
   const [comentario, setComentario] = useState("");
   const [saving, setSaving] = useState(false);
@@ -37,7 +37,10 @@ function AvaliarAtendimento({ agendamento, onAvaliado }) {
   }
 
   return (
-    <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+    <div
+      className={comBorda ? "mt-3 pt-3" : ""}
+      style={comBorda ? { borderTop: "1px solid var(--border)" } : undefined}
+    >
       <p className="text-sm mb-2" style={{ color: "var(--muted1)" }}>
         Como foi o atendimento com {agendamento.fisio.nome}?
       </p>
@@ -94,8 +97,13 @@ function CartaPedido({ pedido, onAvaliado }) {
             <Stethoscope size={14} /> {ag.fisio.nome} — {formatDataHora(ag.data, ag.horario)}
           </p>
 
-          {ag.status === "concluido" && !ag.avaliado && (
+          {ag.status === "concluido" && !ag.avaliado && diasDesdeData(ag.data) >= 7 && (
             <AvaliarAtendimento agendamento={ag} onAvaliado={onAvaliado} />
+          )}
+          {ag.status === "concluido" && !ag.avaliado && diasDesdeData(ag.data) < 7 && (
+            <p className="text-xs mt-3" style={{ color: "var(--muted3)" }}>
+              Você poderá avaliar esse atendimento a partir de {dataMaisDias(ag.data, 7)}.
+            </p>
           )}
           {ag.status === "concluido" && ag.avaliado && (
             <p className="text-sm flex items-center gap-1.5 mt-3" style={{ color: "#1F7A50" }}>

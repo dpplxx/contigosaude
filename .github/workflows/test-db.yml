@@ -53,13 +53,14 @@ jobs:
       - name: Aplicar migrations pendentes (ainda não rodadas em produção)
         run: |
           for f in supabase/migration-2026-*.sql; do
-            # push-triggers depende de pg_net, extensão só disponível no
-            # Postgres hospedado pelo Supabase — não existe pra instalar no
-            # postgres:16 puro que este job sobe de propósito (ver comentário
-            # no topo do workflow). As RPCs de confiança que este job testa
-            # não têm relação com push, então pular aqui é seguro.
-            if [[ "$f" == *push-triggers* ]]; then
-              echo "Pulando $f (precisa de pg_net, só existe no Postgres do Supabase)"
+            # push-triggers depende de pg_net e lembrete-avaliacao depende de
+            # pg_cron — extensões só disponíveis no Postgres hospedado pelo
+            # Supabase, não existem pra instalar no postgres:16 puro que este
+            # job sobe de propósito (ver comentário no topo do workflow). As
+            # RPCs de confiança que este job testa não têm relação com push,
+            # então pular aqui é seguro.
+            if [[ "$f" == *push-triggers* || "$f" == *lembrete-avaliacao* ]]; then
+              echo "Pulando $f (precisa de extensão só disponível no Postgres do Supabase)"
               continue
             fi
             echo "Aplicando $f"

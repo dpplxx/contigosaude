@@ -2,17 +2,26 @@ import { useCallback, useEffect, useState } from "react";
 import { MapPin, Phone, MessageCircle, Loader, ShieldCheck, Star, ChevronDown, ChevronUp, Flag, Share2, Check } from "lucide-react";
 import { Card, Field, TextInput, SelectInput, PrimaryButton, StarRow } from "./ui";
 import { CepInput } from "./Compartilhados";
-import { ESPECIALIDADES_PACIENTE, URGENCIAS, mensagemDeErro, tempoRelativo, waLink } from "../lib/utils";
+import {
+  ESPECIALIDADES_PACIENTE,
+  URGENCIAS,
+  diasDesdeData,
+  mensagemDeErro,
+  tempoRelativo,
+  waLink,
+} from "../lib/utils";
 import { supabase } from "../lib/supabase";
 import {
   avaliacoesFisio,
   denunciarAvaliacao,
   registrarEventoMarketplace,
   obterFisioPublico,
+  meusPedidos,
 } from "../lib/api";
 import { normalizarTexto } from "../lib/normalizacao";
 import { TurnstileWidget, turnstileConfigurado } from "../lib/turnstile";
 import { trackEvent, Events } from "../lib/analytics";
+import { AvaliarAtendimento } from "./MeusAtendimentos";
 
 const MOTIVOS_DENUNCIA = [
   { valor: "falsa", label: "Avaliação falsa" },
@@ -695,6 +704,36 @@ function CartaFisio({ fisio, onAbrirPerfil }) {
 
 function PerfilCompartilhado({ fisio, onVoltar }) {
   const [copiado, setCopiado] = useState(false);
+  const [agendamentoParaAvaliar, setAgendamentoParaAvaliar] = useState(null);
+
+  // Só quem já foi atendida por este fisio (agendamento concluído, sem
+  // avaliação ainda) vê o convite pra avaliar aqui — visitante anônima ou
+  // sem atendimento com ele não chama a RPC (exige conta logada).
+  useEffect(() => {
+    let ativo = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!ativo || !data.session) return;
+      meusPedidos()
+        .then((pedidos) => {
+          if (!ativo) return;
+          const pendente = pedidos
+            .map((p) => p.agendamento)
+            .find(
+              (ag) =>
+                ag &&
+                ag.fisio.id === fisio.id &&
+                ag.status === "concluido" &&
+                !ag.avaliado &&
+                diasDesdeData(ag.data) >= 7
+            );
+          setAgendamentoParaAvaliar(pendente || null);
+        })
+        .catch(() => {});
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [fisio.id]);
 
   const handleWhatsAppClick = () => {
     trackEvent(Events.WHATSAPP_CLICKED, {
@@ -855,6 +894,17 @@ function PerfilCompartilhado({ fisio, onVoltar }) {
           </button>
         </div>
       </Card>
+
+      {agendamentoParaAvaliar && (
+        <Card>
+          <h2 className="font-medium mb-1">Avalie o atendimento</h2>
+          <AvaliarAtendimento
+            agendamento={agendamentoParaAvaliar}
+            onAvaliado={() => setAgendamentoParaAvaliar(null)}
+            comBorda={false}
+          />
+        </Card>
+      )}
 
       {fisio.total_avaliacoes > 0 && (
         <Card>

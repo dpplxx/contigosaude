@@ -12,6 +12,9 @@ import {
 vi.mock('../lib/supabase', () => ({
   supabase: {
     rpc: vi.fn(),
+    // O perfil checa sessão pra saber se mostra o convite de avaliação —
+    // sem sessão nos testes, "sem sessão nenhuma" é o caminho padrão.
+    auth: { getSession: vi.fn(() => Promise.resolve({ data: { session: null } })) },
   },
 }))
 
@@ -23,6 +26,7 @@ vi.mock('../lib/api', () => ({
   // .catch() do componente quebra tentando chamar em cima de undefined.
   registrarEventoMarketplace: vi.fn(() => Promise.resolve()),
   obterFisioPublico: vi.fn(),
+  meusPedidos: vi.fn(() => Promise.resolve([])),
 }))
 
 // O widget real do Turnstile depende do script da Cloudflare carregar, que
