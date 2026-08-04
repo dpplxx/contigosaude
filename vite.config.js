@@ -1,4 +1,3 @@
-import { existsSync, renameSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
@@ -19,31 +18,24 @@ import tailwindcss from "@tailwindcss/vite";
 // Vite espera servir localmente.
 //
 // Modo "capacitor" (npm run build:mobile): gera um build separado em
-// dist-mobile contendo só o app.html (o Capacitor exige um index.html na
-// raiz do webDir, e lá não faz sentido ter a landing institucional).
+// dist-mobile com as mesmas duas páginas do site (landing + app), pra quem
+// abre o app pelo ícone ver a mesma tela inicial de quem entra pelo site —
+// só sem a página de SEO "seo-espirito-santo", que não faz sentido dentro
+// do app instalado.
 export default defineConfig(({ command, mode }) => {
   const isMobile = mode === "capacitor";
 
   return {
     base: command === "build" ? "./" : "/",
-    plugins: [
-      react(),
-      tailwindcss(),
-      isMobile && {
-        name: "renomear-entrada-mobile",
-        closeBundle() {
-          const outDir = resolve(import.meta.dirname, "dist-mobile");
-          const origem = resolve(outDir, "app.html");
-          const destino = resolve(outDir, "index.html");
-          if (existsSync(origem)) renameSync(origem, destino);
-        },
-      },
-    ],
+    plugins: [react(), tailwindcss()],
     build: isMobile
       ? {
           outDir: "dist-mobile",
           rollupOptions: {
-            input: { app: resolve(import.meta.dirname, "app.html") },
+            input: {
+              landing: resolve(import.meta.dirname, "index.html"),
+              app: resolve(import.meta.dirname, "app.html"),
+            },
             output: {
               entryFileNames: "assets/[name]-[hash].js",
               chunkFileNames: "assets/[name]-[hash].js",

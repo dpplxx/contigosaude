@@ -138,6 +138,21 @@
         opacity: 0.9;
       }
 
+      /* Em telas de celular os tamanhos acima (pensados pra desktop) ficam
+         maiores que a própria tela e cobrem o texto — reduz e reposiciona
+         pra ficar só um respiro de cor atrás do título, não em cima dele. */
+      @media (max-width: 30rem) {
+        .forma-1 {
+          top: -1.5rem;
+          right: -3rem;
+          width: 13rem;
+        }
+
+        .forma-2 {
+          width: 2.5rem;
+        }
+      }
+
       .heroi-grade {
         position: relative;
         z-index: 1;
