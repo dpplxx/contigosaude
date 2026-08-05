@@ -20,7 +20,7 @@ import {
   Vazio,
 } from "./ui";
 import { CepInput } from "./Compartilhados";
-import { EthicalCheckbox, PrototypeWarning } from "./Ethics";
+import { EthicalCheckbox } from "./Ethics";
 import {
   cadastrarFisio,
   enviarFotoFisio,
@@ -32,7 +32,6 @@ import { ESPECIALIDADES_FISIO, formatDataHora, mensagemDeErro } from "../lib/uti
 import { TurnstileWidget, turnstileConfigurado } from "../lib/turnstile";
 import {
   CODIGO_ETICA_CREFITO,
-  POLITICA_PRIVACIDADE,
   TERMOS_DE_USO,
   TERMO_RESPONSABILIDADE_PROFISSIONAL,
 } from "../lib/termos";
@@ -64,6 +63,7 @@ const PHYSIO_INITIAL = {
   declaracaoCrefito: false,
   declaracaoEtica: false,
   declaracaoResponsabilidade: false,
+  declaracaoTermos: false,
 };
 
 const RAIOS = [3, 5, 10, 15, 20, 30, 50];
@@ -179,6 +179,7 @@ export function PhysioForm({ onToast }) {
           declaracaoCrefito: true,
           declaracaoEtica: true,
           declaracaoResponsabilidade: true,
+          declaracaoTermos: true,
         });
         setCrefitoStatus(f.crefito_status || null);
         setAgendamentos(dados.agendamentos || []);
@@ -262,7 +263,12 @@ export function PhysioForm({ onToast }) {
       setErro("Preencha seu CREFITO e a UF do registro.");
       return;
     }
-    if (!form.declaracaoCrefito || !form.declaracaoEtica || !form.declaracaoResponsabilidade) {
+    if (
+      !form.declaracaoCrefito ||
+      !form.declaracaoEtica ||
+      !form.declaracaoResponsabilidade ||
+      !form.declaracaoTermos
+    ) {
       setErro("Você precisa aceitar todas as declarações éticas para se cadastrar.");
       return;
     }
@@ -296,7 +302,6 @@ export function PhysioForm({ onToast }) {
   if (carregando) {
     return (
       <div className="space-y-4">
-        <PrototypeWarning />
         <Card>
           <p className="text-sm" style={{ color: "var(--muted1)" }}>
             Carregando seu cadastro...
@@ -308,8 +313,6 @@ export function PhysioForm({ onToast }) {
 
   return (
     <div className="space-y-4">
-      <PrototypeWarning />
-
       {editando && (
         <Card>
           <h2 className="text-lg font-medium mb-1">Seus atendimentos</h2>
@@ -517,6 +520,15 @@ export function PhysioForm({ onToast }) {
           <p className="text-sm font-medium mb-3" style={{ color: "#16C4A8" }}>
             ⚖️ Declarações Éticas e Legais (obrigatórias)
           </p>
+
+          <EthicalCheckbox
+            id="termos_check"
+            checked={form.declaracaoTermos}
+            onChange={(val) => setForm((f) => ({ ...f, declaracaoTermos: val }))}
+            label="Declaro que li e concordo com os Termos de Uso da plataforma."
+            modalTitle="Termos de Uso"
+            modalContent={TERMOS_DE_USO}
+          />
 
           <EthicalCheckbox
             id="crefito_check"

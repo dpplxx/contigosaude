@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { ClipboardList, Search } from "lucide-react";
-import { PrototypeWarning } from "./Ethics";
 import { BuscaFisios } from "./BuscaFisios";
 import { MeusAtendimentos } from "./MeusAtendimentos";
 import { TabButton } from "./ui";
@@ -10,8 +9,6 @@ export function RequestForm({ sessao }) {
 
   return (
     <div className="space-y-4">
-      <PrototypeWarning />
-
       {/* Sem sessão (ex.: link de perfil compartilhado) não tem "meus
           atendimentos" pra mostrar — hc_meus_pedidos exige conta logada. */}
       {sessao && (

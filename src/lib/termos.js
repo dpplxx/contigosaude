@@ -1,7 +1,7 @@
-export const TERMOS_DE_USO = `TERMOS DE USO – PLATAFORMA CUIDAR EM CASA
+export const TERMOS_DE_USO = `TERMOS DE USO – PLATAFORMA CONTIGO SAÚDE
 
 1. OBJETO
-A plataforma Cuidar em Casa é uma ferramenta tecnológica que conecta pacientes que necessitam de cuidados de saúde a profissionais habilitados. A plataforma NÃO presta serviços de saúde, NÃO realiza diagnósticos, NÃO prescreve tratamentos e NÃO substitui a consulta médica ou fisioterapêutica presencial.
+A plataforma Contigo Saúde é uma ferramenta tecnológica que conecta pacientes que necessitam de cuidados de saúde a profissionais habilitados. A plataforma NÃO presta serviços de saúde, NÃO realiza diagnósticos, NÃO prescreve tratamentos e NÃO substitui a consulta médica ou fisioterapêutica presencial.
 
 2. RESPONSABILIDADES DO PROFISSIONAL
 O profissional cadastrado declara ser o único responsável pela qualidade, segurança, eficácia e ética dos atendimentos realizados. A plataforma não se responsabiliza por danos, erros, negligências, imperícias ou imprudências praticados pelo profissional.
@@ -14,28 +14,6 @@ O paciente declara estar ciente de que deve verificar a identidade e o registro 
 
 5. FORO
 Fica eleito o foro da comarca de São Paulo para dirimir quaisquer controvérsias.`;
-
-export const POLITICA_PRIVACIDADE = `POLÍTICA DE PRIVACIDADE – CUIDAR EM CASA
-
-1. DADOS COLETADOS
-Coletamos: nome, WhatsApp, endereço (cidade/bairro), especialidade desejada, observações sobre a saúde (quando fornecidas) e, para profissionais, número de registro (CREFITO) e formação.
-
-2. FINALIDADE
-Os dados são utilizados exclusivamente para viabilizar a conexão entre paciente e profissional, permitir agendamentos e comunicação via WhatsApp.
-
-3. COMPARTILHAMENTO
-Os dados do paciente são compartilhados apenas com o profissional selecionado para o atendimento. Os dados do profissional são exibidos dentro da plataforma para que os pacientes possam conhecê-lo.
-
-Ao avaliar um profissional após um atendimento, seu primeiro nome e a inicial do último sobrenome (ex.: "Maria S.") ficam visíveis publicamente junto da nota e do comentário — nunca o nome completo, o WhatsApp ou qualquer outro dado de contato. Avaliações podem ser denunciadas por qualquer visitante e passam por moderação da equipe antes de serem removidas.
-
-4. DIREITOS DO TITULAR
-Você pode solicitar a qualquer momento a correção, exclusão ou portabilidade dos seus dados enviando um e-mail para suporte@cuideemcasa.com.br.
-
-5. SEGURANÇA
-Adotamos medidas técnicas para proteger seus dados, mas nenhum sistema é 100% seguro. Ao utilizar a plataforma, você declara estar ciente deste risco.
-
-6. CONFORMIDADE LGPD
-Esta plataforma está em conformidade com a Lei Geral de Proteção de Dados (LGPD) do Brasil.`;
 
 export const CODIGO_ETICA_CREFITO = `DECLARAÇÃO DE CIÊNCIA – CÓDIGO DE ÉTICA DA FISIOTERAPIA
 (RESOLUÇÃO COFFITO Nº 424/2013)
@@ -64,7 +42,7 @@ Eu, profissional cadastrado, declaro expressamente que:
 
 1. Sou o único responsável pela adequação, qualidade e segurança dos serviços que prestarei aos pacientes.
 
-2. A plataforma Cuidar em Casa atua apenas como meio de contato, não intervindo na relação terapêutica.
+2. A plataforma Contigo Saúde atua apenas como meio de contato, não intervindo na relação terapêutica.
 
 3. Isento a plataforma, seus administradores e colaboradores de qualquer responsabilidade civil, penal ou administrativa decorrente de atos praticados por mim durante o exercício da minha profissão.
 
@@ -73,13 +51,3 @@ Eu, profissional cadastrado, declaro expressamente que:
 5. Responsabilizo-me por manter seguro e confidencial todos os dados pessoais e de saúde do paciente.
 
 6. Reconheço que utilizo a plataforma por minha livre vontade e que posso ser removido da mesma a qualquer momento em caso de violação destas condições.`;
-
-export const AVISO_PROTOTIPO = `⚠️ AVISO IMPORTANTE
-
-Este é um protótipo de plataforma em desenvolvimento.
-
-Os dados aqui registrados são armazenados em um banco de dados compartilhado para fins de teste e demonstração. NÃO compartilhe dados reais de pacientes ou informações sensíveis de saúde neste ambiente.
-
-Use dados fictícios ou exemplos para testar a plataforma.
-
-Quando a plataforma entrar em produção, todos os dados serão migrados para um ambiente seguro com autenticação individual, criptografia e conformidade total com a LGPD.`;

@@ -91,27 +91,3 @@ export function EthicalCheckbox({
     </>
   );
 }
-
-export function PrototypeWarning() {
-  return (
-    <Card>
-      <div className="flex items-start gap-3">
-        <div
-          className="text-lg shrink-0 mt-0.5"
-          style={{ lineHeight: 1 }}
-        >
-          ⚠️
-        </div>
-        <div className="text-sm" style={{ color: "var(--muted1)" }}>
-          <p className="font-medium mb-1">Este é um protótipo em desenvolvimento</p>
-          <p>
-            Os dados registrados aqui são públicos para fins de teste. <strong>Não compartilhe dados reais de pacientes</strong> ou informações sensíveis de saúde.
-          </p>
-          <p className="text-xs mt-2" style={{ color: "var(--muted2)" }}>
-            Quando a plataforma entrar em produção, todos os dados serão migrados para um ambiente seguro com autenticação individual e conformidade LGPD.
-          </p>
-        </div>
-      </div>
-    </Card>
-  );
-}
