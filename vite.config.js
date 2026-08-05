@@ -49,6 +49,7 @@ export default defineConfig(({ command, mode }) => {
             input: {
               landing: resolve(import.meta.dirname, "index.html"),
               app: resolve(import.meta.dirname, "app.html"),
+              privacidade: resolve(import.meta.dirname, "privacidade.html"),
               "seo-espirito-santo": resolve(
                 import.meta.dirname,
                 "fisioterapia-domiciliar/espirito-santo.html"

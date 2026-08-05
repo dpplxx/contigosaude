@@ -27,3 +27,9 @@ dist-mobile
 # Cache local da Supabase CLI (link do projeto, nada de segredo, mas é
 # específico da máquina que rodou o deploy)
 supabase/.temp/
+
+# Segredos de assinatura do Android — a keystore em si mora fora do repo
+# (C:\Users\Desktop\chaves-contigosaude), mas esse arquivo tem as senhas.
+android/keystore.properties
+*.jks
+*.keystore
