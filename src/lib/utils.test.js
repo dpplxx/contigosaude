@@ -3,6 +3,8 @@ import {
   formatarTelefone,
   telefoneCompleto,
   emailValido,
+  crefitoValido,
+  linkBuscaCrefito,
   waLink,
   tempoRelativo,
   pluralAvaliacoes,
@@ -46,6 +48,32 @@ describe("emailValido", () => {
     expect(emailValido("ana@")).toBe(false);
     expect(emailValido("ana@exemplo")).toBe(false);
     expect(emailValido("ana exemplo.com")).toBe(false);
+  });
+});
+
+describe("crefitoValido", () => {
+  it("aceita só dígitos ou com o sufixo de categoria", () => {
+    expect(crefitoValido("123456")).toBe(true);
+    expect(crefitoValido("123456-F")).toBe(true);
+    expect(crefitoValido("123456-TO")).toBe(true);
+    expect(crefitoValido("123")).toBe(true);
+  });
+
+  it("rejeita formatos claramente errados", () => {
+    expect(crefitoValido("")).toBe(false);
+    expect(crefitoValido("abc")).toBe(false);
+    expect(crefitoValido("12")).toBe(false);
+    expect(crefitoValido("12345678")).toBe(false);
+    expect(crefitoValido("123456-")).toBe(false);
+  });
+});
+
+describe("linkBuscaCrefito", () => {
+  it("monta uma busca do Google com o número e a UF", () => {
+    const link = linkBuscaCrefito("123456-F", "SP");
+    expect(link).toBe(
+      "https://www.google.com/search?q=CREFITO%20consulta%20123456-F%20SP%20fisioterapeuta"
+    );
   });
 });
 

@@ -31,6 +31,7 @@ import {
 import { trackEvent, Events } from "../lib/analytics";
 import {
   ESPECIALIDADES_FISIO,
+  crefitoValido,
   formatDataHora,
   mensagemDeErro,
   telefoneCompleto,
@@ -275,6 +276,10 @@ export function PhysioForm({ onToast }) {
       setErro("Preencha seu CREFITO e a UF do registro.");
       return;
     }
+    if (!crefitoValido(form.crefito)) {
+      setErro("Número do CREFITO inválido. Use só o número, com ou sem a letra da categoria (ex: 123456 ou 123456-F).");
+      return;
+    }
     if (!form.declaracaoCrefito || !form.declaracaoEtica || !form.declaracaoResponsabilidade) {
       setErro("Você precisa aceitar todas as declarações éticas para se cadastrar.");
       return;
@@ -434,7 +439,7 @@ export function PhysioForm({ onToast }) {
             <TextInput
               value={form.crefito}
               onChange={set("crefito")}
-              placeholder="Ex: 123456"
+              placeholder="Ex: 123456 ou 123456-F"
               required
             />
           </Field>

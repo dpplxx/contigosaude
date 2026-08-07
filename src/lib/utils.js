@@ -176,6 +176,27 @@ export function senhaForte(senha) {
   return s.length >= 8 && /[a-zA-Z]/.test(s) && /[0-9]/.test(s);
 }
 
+// Checagem de formato do número de registro no CREFITO (não confirma se o
+// registro existe de verdade — isso continua sendo a verificação manual do
+// admin no Painel). Aceita só os dígitos ("123456") ou com o sufixo de
+// categoria ("123456-F", "123456-TO"), que é como o CREFITO formata na
+// prática. 3 a 7 dígitos cobre tanto matrícula antiga curta quanto região
+// nova com volume alto.
+export function crefitoValido(crefito) {
+  const c = String(crefito || "").trim().toUpperCase();
+  return /^\d{3,7}(-[A-Z]{1,3})?$/.test(c);
+}
+
+// Link de busca (não uma consulta oficial): o CREFITO não tem conselho
+// único nem API — são ~19 regionais, cada um com seu próprio site, e esse
+// mapeamento está mudando (Goiás virou CREFITO-19 em 2024, Paraíba vira
+// CREFITO-21 em breve). Em vez de cravar um mapeamento UF→site que
+// envelhece mal, deixa o Google achar o site regional certo.
+export function linkBuscaCrefito(crefito, uf) {
+  const termo = `CREFITO consulta ${crefito || ""} ${uf || ""} fisioterapeuta`.trim();
+  return `https://www.google.com/search?q=${encodeURIComponent(termo)}`;
+}
+
 // Mensagem de erro legível. O Postgres devolve o texto do RAISE EXCEPTION em
 // .message, então as validações do banco chegam prontas para o usuário.
 export function mensagemDeErro(erro, padrao) {

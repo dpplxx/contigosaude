@@ -48,6 +48,7 @@ import {
   formatDataHora,
   formatarMoeda,
   isNovo,
+  linkBuscaCrefito,
   mensagemDeErro,
   pluralAvaliacoes,
   tempoRelativo,
@@ -257,6 +258,15 @@ function VerificacaoCrefito({ fisio, onDone }) {
       </p>
       <ErroInline>{erro}</ErroInline>
       <div className="flex flex-wrap gap-3 mt-1">
+        <a
+          href={linkBuscaCrefito(fisio.crefito, fisio.crefito_uf)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs underline"
+          style={{ color: "var(--muted1)" }}
+        >
+          Pesquisar CREFITO
+        </a>
         {fisio.crefito_status !== "verificado" && (
           <button
             onClick={() => marcar("verificado")}
