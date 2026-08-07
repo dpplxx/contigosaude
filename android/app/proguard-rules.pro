@@ -19,3 +19,17 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Mantém número de linha em stack traces nativas (útil pra debugar um
+# eventual crash reportado por usuário), mas oculta o nome do arquivo fonte.
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
+
+# O bridge JS-para-nativo do Capacitor já vem coberto pelas consumer rules
+# do @capacitor/android (mergeadas automaticamente no build), mas mantém
+# aqui como reforço caso algum plugin de terceiros dependa de reflection
+# sem publicar suas próprias regras.
+-keep public class * extends com.getcapacitor.Plugin { *; }
+-keepclassmembers class * {
+    @com.getcapacitor.PluginMethod public *;
+}

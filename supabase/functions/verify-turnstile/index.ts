@@ -1,41 +1,55 @@
 // Edge Function: confirma um token do Cloudflare Turnstile com o backend
-// da Cloudflare antes de aceitar um cadastro/pedido.
+// da Cloudflare antes de aceitar um cadastro.
 //
-// AINDA NÃO IMPLANTADA nem chamada por lugar nenhum do app. Hoje o
-// Turnstile (src/lib/turnstile.js) só trava o botão de enviar no
-// navegador — filtra bot simples que nem consegue gerar um token, mas não
-// impede quem chama hc_criar_pedido/hc_cadastrar_fisio direto pelo cliente
-// Supabase, pulando a tela. Fechar essa lacuna de verdade significa trocar
-// o fluxo de "chamar a RPC direto do frontend" por "chamar este Edge
-// Function primeiro" — mudança de fluxo, não só configuração, por isso
-// não fiz agora.
+// Chamada pelo frontend (ver src/lib/api.js → verificarTurnstile) antes de
+// hc_cadastrar_fisio. Sem isso, o Turnstile no navegador (src/lib/
+// turnstile.jsx) só travava o botão — não impedia quem chamasse a RPC
+// direto pelo cliente Supabase, pulando a tela.
 //
-// Antes de implantar (`supabase functions deploy verify-turnstile`):
-// configurar o secret TURNSTILE_SECRET_KEY (Dashboard → Turnstile → seu
-// site → Secret key — NUNCA a mesma coisa que VITE_TURNSTILE_SITE_KEY,
-// que é pública). SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY já existem
-// automaticamente em todo Edge Function do projeto.
+// PRECISA SER IMPLANTADA (`supabase functions deploy verify-turnstile`) e
+// ter o secret TURNSTILE_SECRET_KEY configurado (Dashboard → Turnstile →
+// seu site → Secret key — NUNCA a mesma coisa que VITE_TURNSTILE_SITE_KEY,
+// que é pública) antes de funcionar em produção.
 //
 // Chamada esperada (POST, JSON): { "token": "..." }
 // Resposta: { "valido": true|false }
-//
-// Uso pretendido depois que existir: o frontend chama este função com o
-// token do Turnstile ANTES de chamar hc_criar_pedido/hc_cadastrar_fisio;
-// só segue se "valido" vier true. Não dá pra verificar dentro da própria
-// RPC do Postgres porque isso exigiria uma chamada HTTP síncrona de dentro
-// do banco (pg_net é assíncrono, não serve pra bloquear no mesmo request).
+
+// CORS: antes esta função respondia "Access-Control-Allow-Origin: *" —
+// qualquer site da internet podia chamar. Restrito à lista de origens que o
+// app realmente usa (domínio de produção, app nativo Android/iOS via
+// Capacitor, e localhost de desenvolvimento).
+const ALLOWED_ORIGINS = new Set([
+  "https://contigosaude.com.br",
+  "https://localhost",
+  "capacitor://localhost",
+  "http://localhost:5173",
+]);
+
+function corsHeaders(req: Request): HeadersInit {
+  const origin = req.headers.get("origin") ?? "";
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    Vary: "Origin",
+  };
+  if (ALLOWED_ORIGINS.has(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
+}
 
 const TURNSTILE_SECRET_KEY = Deno.env.get("TURNSTILE_SECRET_KEY")!;
 
 Deno.serve(async (req) => {
+  const cors = corsHeaders(req);
   if (req.method === "OPTIONS") {
-    return new Response("OK", { headers: { "Access-Control-Allow-Origin": "*" } });
+    return new Response("OK", { headers: cors });
   }
 
   const { token } = await req.json();
   if (!token) {
     return new Response(JSON.stringify({ valido: false, erro: "token ausente" }), {
       status: 400,
+      headers: { ...cors, "Content-Type": "application/json" },
     });
   }
 
@@ -52,6 +66,6 @@ Deno.serve(async (req) => {
   const resultado = await resposta.json();
 
   return new Response(JSON.stringify({ valido: resultado.success === true }), {
-    headers: { "Content-Type": "application/json" },
+    headers: { ...cors, "Content-Type": "application/json" },
   });
 });

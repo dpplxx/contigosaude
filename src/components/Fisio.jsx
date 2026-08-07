@@ -26,9 +26,15 @@ import {
   enviarFotoFisio,
   marcarStatusAgendamento,
   meuPainelFisio,
+  verificarTurnstile,
 } from "../lib/api";
 import { trackEvent, Events } from "../lib/analytics";
-import { ESPECIALIDADES_FISIO, formatDataHora, mensagemDeErro } from "../lib/utils";
+import {
+  ESPECIALIDADES_FISIO,
+  formatDataHora,
+  mensagemDeErro,
+  telefoneCompleto,
+} from "../lib/utils";
 import { TurnstileWidget, turnstileConfigurado } from "../lib/turnstile";
 import {
   CODIGO_ETICA_CREFITO,
@@ -253,7 +259,14 @@ export function PhysioForm({ onToast }) {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!form.nome || !form.whatsapp || !form.cidade || !form.formacao) return;
+    if (!form.nome || !form.whatsapp || !form.cidade || !form.formacao) {
+      setErro("Preencha nome, WhatsApp, cidade e formação.");
+      return;
+    }
+    if (!telefoneCompleto(form.whatsapp)) {
+      setErro("Informe um WhatsApp válido, com DDD.");
+      return;
+    }
     if (form.especialidades.length === 0) {
       setErro("Escolha ao menos uma especialidade que você atende.");
       return;
@@ -271,6 +284,22 @@ export function PhysioForm({ onToast }) {
     if (!editando && turnstileConfigurado() && !turnstileToken) {
       setErro("Confirme a verificação antes de continuar.");
       return;
+    }
+    if (!editando && turnstileConfigurado()) {
+      try {
+        const valido = await verificarTurnstile(turnstileToken);
+        if (!valido) {
+          setErro("Não foi possível confirmar a verificação. Recarregue a página e tente de novo.");
+          return;
+        }
+      } catch (e) {
+        // A Edge Function verify-turnstile pode ainda não estar implantada
+        // no Supabase — não bloqueia o cadastro por causa disso, já que o
+        // token não-vazio checado acima continua valendo como camada
+        // mínima. Assim que a função for implantada, essa checagem passa a
+        // valer de verdade sem precisar mudar mais nada aqui.
+        console.warn("Verificação do Turnstile no servidor indisponível:", e);
+      }
     }
     setSaving(true);
     setErro("");

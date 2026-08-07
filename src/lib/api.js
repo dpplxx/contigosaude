@@ -41,6 +41,19 @@ export function cadastrarFisio(form) {
   });
 }
 
+// Confirma no servidor que o token do Turnstile é legítimo (o widget no
+// navegador só filtra bot que nem consegue gerar token — sem essa checagem,
+// quem chamasse cadastrarFisio() direto pelo cliente Supabase pulava o
+// captcha inteiro). Se a Edge Function ainda não estiver implantada, o erro
+// sobe pra quem chamou tratar.
+export async function verificarTurnstile(token) {
+  const { data, error } = await cliente().functions.invoke("verify-turnstile", {
+    body: { token },
+  });
+  if (error) throw error;
+  return data?.valido === true;
+}
+
 // O painel do fisio usa a conta logada, não mais um WhatsApp digitado —
 // veja migration-fisio-auth.sql.
 export async function meuPainelFisio() {
@@ -193,16 +206,50 @@ export function denunciarAvaliacao({ avaliacaoId, motivo, detalhes }) {
 // Autenticação do Painel
 // ---------------------------------------------------------------------------
 
+// Bloqueio de força bruta: antes de tentar a senha, confere se esse email já
+// levou 5 erros e está nos 15 minutos de bloqueio (ver migration
+// 2026-08-07-bloqueio-login). Em caso de erro de credencial, registra a
+// falha sem travar a resposta pro usuário; em caso de sucesso, zera a
+// contagem. As duas chamadas de contagem não usam await de propósito — não
+// podem atrasar o login de quem acertou a senha nem a mensagem de erro de
+// quem errou.
 export async function entrar(email, senha) {
-  const { data, error } = await cliente().auth.signInWithPassword({
-    email: email.trim(),
+  const emailNormalizado = email.trim().toLowerCase();
+  const db = cliente();
+
+  const bloqueio = await rpc("hc_checar_bloqueio_login", { p_email: emailNormalizado });
+  if (bloqueio?.bloqueado) {
+    const min = bloqueio.minutos_restantes || 15;
+    throw new Error(`Muitas tentativas erradas. Tente de novo em ${min} minuto${min === 1 ? "" : "s"}.`);
+  }
+
+  const { data, error } = await db.auth.signInWithPassword({
+    email: emailNormalizado,
     password: senha,
   });
-  if (error) throw error;
+
+  if (error) {
+    if (/Invalid login credentials/i.test(error.message || "")) {
+      rpc("hc_registrar_falha_login", { p_email: emailNormalizado }).catch(() => {});
+    }
+    throw error;
+  }
+
+  rpc("hc_limpar_tentativas_login", { p_email: emailNormalizado }).catch(() => {});
   return data.session;
 }
 
 export async function sair() {
+  await cliente().auth.signOut();
+}
+
+// LGPD: apaga/anonimiza todo dado pessoal da conta (cadastro de fisio e/ou
+// pedidos feitos como paciente) e encerra a sessão. Não apaga o login em
+// si (auth.users) — isso precisa de uma Edge Function com service role,
+// ver comentário na migration hc_excluir_minha_conta. Na prática, depois
+// disso a conta não tem mais nenhum dado pessoal associado.
+export async function excluirMinhaConta() {
+  await rpc("hc_excluir_minha_conta");
   await cliente().auth.signOut();
 }
 

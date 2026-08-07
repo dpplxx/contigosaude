@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   formatarTelefone,
   telefoneCompleto,
+  emailValido,
   waLink,
   tempoRelativo,
   pluralAvaliacoes,
@@ -31,6 +32,20 @@ describe("telefoneCompleto", () => {
     expect(telefoneCompleto("119876543")).toBe(false); // 9 dígitos
     expect(telefoneCompleto("1198765432")).toBe(true); // 10 dígitos
     expect(telefoneCompleto("11987654321")).toBe(true); // 11 dígitos
+  });
+});
+
+describe("emailValido", () => {
+  it("aceita emails no formato básico", () => {
+    expect(emailValido("ana@exemplo.com")).toBe(true);
+    expect(emailValido("ana.silva@sub.exemplo.com.br")).toBe(true);
+  });
+
+  it("rejeita formatos inválidos", () => {
+    expect(emailValido("")).toBe(false);
+    expect(emailValido("ana@")).toBe(false);
+    expect(emailValido("ana@exemplo")).toBe(false);
+    expect(emailValido("ana exemplo.com")).toBe(false);
   });
 });
 

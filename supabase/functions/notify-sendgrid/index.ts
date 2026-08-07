@@ -1,8 +1,32 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
+// CORS: antes esta função respondia "Access-Control-Allow-Origin: *" —
+// qualquer site da internet podia chamar. Restrito à lista de origens que o
+// app realmente usa (domínio de produção, app nativo Android/iOS via
+// Capacitor, e localhost de desenvolvimento).
+const ALLOWED_ORIGINS = new Set([
+  "https://contigosaude.com.br",
+  "https://localhost",
+  "capacitor://localhost",
+  "http://localhost:5173",
+])
+
+function corsHeaders(req) {
+  const origin = req.headers.get("origin") ?? ""
+  const headers = {
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    Vary: "Origin",
+  }
+  if (ALLOWED_ORIGINS.has(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin
+  }
+  return headers
+}
+
 serve(async (req) => {
+  const cors = corsHeaders(req)
   if (req.method === "OPTIONS") {
-    return new Response("OK", { headers: { "Access-Control-Allow-Origin": "*" } })
+    return new Response("OK", { headers: cors })
   }
 
   const {
@@ -18,7 +42,7 @@ serve(async (req) => {
   if (!sendgridApiKey) {
     return new Response(
       JSON.stringify({ error: "SENDGRID_API_KEY not configured" }),
-      { status: 500 }
+      { status: 500, headers: cors }
     )
   }
 
@@ -58,15 +82,17 @@ serve(async (req) => {
       const error = await response.text()
       return new Response(JSON.stringify({ error, status: response.status }), {
         status: response.status,
+        headers: cors,
       })
     }
 
     return new Response(JSON.stringify({ success: true, pedido_id }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...cors, "Content-Type": "application/json" },
     })
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
+      headers: cors,
     })
   }
 })

@@ -22,6 +22,29 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
 
+// CORS: antes esta função respondia "Access-Control-Allow-Origin: *" —
+// qualquer site da internet podia chamar. Restrito à lista de origens que o
+// app realmente usa (domínio de produção, app nativo Android/iOS via
+// Capacitor, e localhost de desenvolvimento).
+const ALLOWED_ORIGINS = new Set([
+  "https://contigosaude.com.br",
+  "https://localhost",
+  "capacitor://localhost",
+  "http://localhost:5173",
+]);
+
+function corsHeaders(req: Request): HeadersInit {
+  const origin = req.headers.get("origin") ?? "";
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    Vary: "Origin",
+  };
+  if (ALLOWED_ORIGINS.has(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
+}
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY")!;
@@ -31,14 +54,16 @@ const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:contato@contigosa
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
 Deno.serve(async (req) => {
+  const cors = corsHeaders(req);
   if (req.method === "OPTIONS") {
-    return new Response("OK", { headers: { "Access-Control-Allow-Origin": "*" } });
+    return new Response("OK", { headers: cors });
   }
 
   const { userId, titulo, corpo, url } = await req.json();
   if (!userId || !titulo) {
     return new Response(JSON.stringify({ error: "userId e titulo são obrigatórios" }), {
       status: 400,
+      headers: cors,
     });
   }
 
@@ -53,7 +78,7 @@ Deno.serve(async (req) => {
     .eq("user_id", userId);
 
   if (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: cors });
   }
 
   const payload = JSON.stringify({ titulo, corpo: corpo ?? "", url: url ?? "/app.html" });
@@ -86,6 +111,6 @@ Deno.serve(async (req) => {
       falharam: resultados.filter((r) => r.status === "rejected").length,
       inscricoes_removidas: mortas.length,
     }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { ...cors, "Content-Type": "application/json" } }
   );
 });

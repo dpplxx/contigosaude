@@ -22,7 +22,15 @@ import { Login } from "./components/Login";
 const Metricas = lazy(() =>
   import("./components/Metricas").then((m) => ({ default: m.Metricas }))
 );
-import { aoMudarSessao, carregarPainel, ehAdmin, ehFisio, sair, sessaoAtual } from "./lib/api";
+import {
+  aoMudarSessao,
+  carregarPainel,
+  ehAdmin,
+  ehFisio,
+  excluirMinhaConta,
+  sair,
+  sessaoAtual,
+} from "./lib/api";
 import { supabaseConfigurado } from "./lib/supabase";
 import { mensagemDeErro } from "./lib/utils";
 import { ativarPush, pushSuportado } from "./lib/push";
@@ -62,7 +70,7 @@ function temFisioNaUrl() {
   }
 }
 
-function Header({ tema, onToggleTema, onAtivarNotificacoes, sessao, onSair }) {
+function Header({ tema, onToggleTema, onAtivarNotificacoes, sessao, onSair, onExcluirConta }) {
   return (
     <header className="max-w-3xl mx-auto px-4 sm:px-6 pt-10 pb-6 relative">
       <div
@@ -92,6 +100,15 @@ function Header({ tema, onToggleTema, onAtivarNotificacoes, sessao, onSair }) {
               style={{ borderColor: "var(--border)", color: "var(--muted1)" }}
             >
               <LogOut size={14} /> Sair
+            </button>
+          )}
+          {sessao && (
+            <button
+              onClick={onExcluirConta}
+              className="shrink-0 text-xs underline decoration-dotted"
+              style={{ color: "var(--muted1)" }}
+            >
+              Excluir conta
             </button>
           )}
           <button
@@ -146,6 +163,8 @@ export default function App() {
   const [erroPainel, setErroPainel] = useState("");
   const [autorizada, setAutorizada] = useState(true);
   const [recuperandoSenha, setRecuperandoSenha] = useState(false);
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
+  const [excluindoConta, setExcluindoConta] = useState(false);
 
   const addToast = useCallback((msg, tipo = "ok") => {
     const id = uid();
@@ -258,6 +277,21 @@ export default function App() {
     addToast("Você saiu da área restrita.");
   };
 
+  const confirmarExclusaoConta = async () => {
+    setExcluindoConta(true);
+    try {
+      await excluirMinhaConta();
+      setConfirmandoExclusao(false);
+      setSessao(null);
+      setDadosPainel(PAINEL_VAZIO);
+      addToast("Conta excluída. Seus dados foram removidos.");
+    } catch (e) {
+      addToast(mensagemDeErro(e, "Não foi possível excluir a conta agora."), "erro");
+    } finally {
+      setExcluindoConta(false);
+    }
+  };
+
   return (
     <div
       className={`min-h-screen w-full ${tema === "escuro" ? "theme-dark" : ""}`}
@@ -274,9 +308,43 @@ export default function App() {
         onAtivarNotificacoes={pedirPermissaoNotificacao}
         sessao={sessao}
         onSair={fazerLogout}
+        onExcluirConta={() => setConfirmandoExclusao(true)}
       />
 
-      {!recuperandoSenha && (
+      {confirmandoExclusao && (
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-4">
+          <Card>
+            <p className="text-sm font-medium mb-1" style={{ color: "var(--text)" }}>
+              Excluir sua conta?
+            </p>
+            <p className="text-sm mb-4" style={{ color: "var(--muted1)" }}>
+              Isso remove seu nome, WhatsApp e demais dados pessoais do cadastro (paciente e/ou
+              fisioterapeuta) e cancela agendamentos futuros. Não dá para desfazer. Você continua
+              deslogada depois.
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={confirmarExclusaoConta}
+                disabled={excluindoConta}
+                className="text-xs px-3 py-1.5 rounded-lg text-white disabled:opacity-60"
+                style={{ background: "#C24A3E" }}
+              >
+                {excluindoConta ? "Excluindo..." : "Sim, excluir minha conta e meus dados"}
+              </button>
+              <button
+                onClick={() => setConfirmandoExclusao(false)}
+                disabled={excluindoConta}
+                className="text-xs px-3 py-1.5 rounded-lg border"
+                style={{ borderColor: "var(--border)", color: "var(--muted1)" }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {!recuperandoSenha && !confirmandoExclusao && (
         <div className="max-w-3xl mx-auto px-4 sm:px-6 flex gap-2 pb-3 flex-wrap">
           {(!souFisio || souAdmin) && (
             <RoleButton active={role === "paciente"} onClick={() => setRole("paciente")}>

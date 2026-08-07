@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { AlertCircle } from 'lucide-react'
 import { Card, Field, TextInput, PrimaryButton } from './ui'
 import { supabase } from '../lib/supabase'
-import { recuperarSenha, definirNovaSenha } from '../lib/api'
-import { mensagemDeErro } from '../lib/utils'
+import { entrar, recuperarSenha, definirNovaSenha } from '../lib/api'
+import { emailValido, mensagemDeErro, senhaForte } from '../lib/utils'
 
 const COPY = {
   paciente: {
@@ -38,6 +38,10 @@ export function AuthEmail({ tipo = 'paciente', onAutenticado }) {
       setErro('Informe seu email')
       return
     }
+    if (!emailValido(email)) {
+      setErro('Email inválido')
+      return
+    }
 
     setLoading(true)
     setErro('')
@@ -58,18 +62,22 @@ export function AuthEmail({ tipo = 'paciente', onAutenticado }) {
       setErro('Preencha email e senha')
       return
     }
+    if (!emailValido(email)) {
+      setErro('Email inválido')
+      return
+    }
+    if (modo === 'registro' && !senhaForte(senha)) {
+      setErro('A senha precisa ter pelo menos 8 caracteres, com letra e número.')
+      return
+    }
 
     setLoading(true)
     setErro('')
 
     try {
       if (modo === 'login') {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password: senha,
-        })
-        if (error) throw error
-        onAutenticado?.(data.session)
+        const sessao = await entrar(email, senha)
+        onAutenticado?.(sessao)
       } else {
         const { error } = await supabase.auth.signUp({
           email: email.trim(),
@@ -183,7 +191,7 @@ export function AuthEmail({ tipo = 'paciente', onAutenticado }) {
             type="password"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
-            placeholder="Mínimo 6 caracteres"
+            placeholder={modo === 'registro' ? 'Mínimo 8 caracteres, com letra e número' : 'Sua senha'}
             disabled={loading}
             required
           />
@@ -243,8 +251,8 @@ export function DefinirNovaSenha({ onConcluido }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (senha.length < 6) {
-      setErro('A senha precisa ter pelo menos 6 caracteres.')
+    if (!senhaForte(senha)) {
+      setErro('A senha precisa ter pelo menos 8 caracteres, com letra e número.')
       return
     }
     if (senha !== confirmacao) {
@@ -278,7 +286,7 @@ export function DefinirNovaSenha({ onConcluido }) {
             type="password"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
-            placeholder="Mínimo 6 caracteres"
+            placeholder="Mínimo 8 caracteres, com letra e número"
             disabled={loading}
             required
           />

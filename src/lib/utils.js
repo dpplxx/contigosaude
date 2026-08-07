@@ -162,6 +162,20 @@ export function calcularMatches(physios, pedido) {
     });
 }
 
+// Checagem simples de formato, só pra pegar erro de digitação antes de
+// bater no servidor — quem valida email de verdade (existe, é entregável)
+// é o Supabase Auth ao mandar o email de confirmação.
+export function emailValido(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
+}
+
+// Mínimo 8 caracteres com letra e número — sem exigir símbolo, que só
+// atrapalha quem não é técnico sem travar bot nenhum.
+export function senhaForte(senha) {
+  const s = String(senha || "");
+  return s.length >= 8 && /[a-zA-Z]/.test(s) && /[0-9]/.test(s);
+}
+
 // Mensagem de erro legível. O Postgres devolve o texto do RAISE EXCEPTION em
 // .message, então as validações do banco chegam prontas para o usuário.
 export function mensagemDeErro(erro, padrao) {
