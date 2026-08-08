@@ -244,12 +244,12 @@ export async function sair() {
 }
 
 // LGPD: apaga/anonimiza todo dado pessoal da conta (cadastro de fisio e/ou
-// pedidos feitos como paciente) e encerra a sessão. Não apaga o login em
-// si (auth.users) — isso precisa de uma Edge Function com service role,
-// ver comentário na migration hc_excluir_minha_conta. Na prática, depois
-// disso a conta não tem mais nenhum dado pessoal associado.
+// pedidos feitos como paciente) e agora também apaga o login em si
+// (auth.users) — a Edge Function excluir-conta faz as duas coisas usando a
+// service role key, que só existe do lado do servidor.
 export async function excluirMinhaConta() {
-  await rpc("hc_excluir_minha_conta");
+  const { error } = await cliente().functions.invoke("excluir-conta");
+  if (error) throw error;
   await cliente().auth.signOut();
 }
 

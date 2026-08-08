@@ -68,7 +68,7 @@ serve(async (req) => {
             subject: `Novo pedido: ${especialidade} em ${cidade}`,
           },
         ],
-        from: { email: "contato@contisosaude.com", name: "Contigo Saúde" },
+        from: { email: "contato@contigosaude.com.br", name: "Contigo Saúde" },
         content: [
           {
             type: "text/html",

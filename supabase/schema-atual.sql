@@ -1487,55 +1487,15 @@ end $$;
 revoke all on function public.hc_anonimizar_paciente(uuid) from public, anon;
 grant execute on function public.hc_anonimizar_paciente(uuid) to authenticated;
 
--- FUNÇÕES DE CRIPTOGRAFIA (schema.sql) — mantidas por completude histórica.
--- ATENÇÃO: nenhum código do app chama estas duas hoje (nem grava em
--- crefito_encrypted), e elas quebram do jeito que estão: pgp_sym_encrypt
--- vive no schema "extensions" no Supabase, e o search_path aqui é só
--- "public, pg_temp" — dá "function does not exist" ao chamar. Precisariam
--- de "set search_path = public, extensions, pg_temp" pra sequer funcionar.
--- Também vale notar que a chave de criptografia está fixa aqui no código,
--- versionado no Git — não protege nada de verdade. Uma criptografia real
--- precisaria da chave em um cofre de segredos (Vault do Supabase), não no
--- SQL. Corrigir isso é trabalho pra uma migração nova, não pra este arquivo.
--- RBAC (migration-2026-08-08-rbac-crefito.sql): estas duas funções não são
--- chamadas por nenhuma tela do app (sobra de uma criptografia que nunca foi
--- ligada) e estavam liberadas demais — encriptar pra "anon" (qualquer
--- visitante sem login) e descriptografar pra qualquer conta autenticada,
--- não só admin. Restrito a admin agora; sem uso hoje, então não muda nada
--- pra ninguém que já usa o app.
-create or replace function public.hc_encriptar_crefito(p_crefito text)
-returns text
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
-begin
-  if not hc_e_admin() then
-    raise exception 'Sem permissão. Esta ação é restrita a administradores.';
-  end if;
-
-  return pgp_sym_encrypt(p_crefito, 'chave-segura-fisio-em-casa-2026');
-end $$;
-
-revoke all on function public.hc_encriptar_crefito(text) from public, anon, authenticated;
-grant execute on function public.hc_encriptar_crefito(text) to authenticated;
-
-create or replace function public.hc_descriptografar_crefito(p_encrypted text)
-returns text
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
-begin
-  if not hc_e_admin() then
-    raise exception 'Sem permissão. Esta ação é restrita a administradores.';
-  end if;
-
-  return pgp_sym_decrypt(p_encrypted::bytea, 'chave-segura-fisio-em-casa-2026');
-end $$;
-
-revoke all on function public.hc_descriptografar_crefito(text) from public, anon, authenticated;
-grant execute on function public.hc_descriptografar_crefito(text) to authenticated;
+-- FUNÇÕES DE CRIPTOGRAFIA DE CREFITO: removidas em 2026-08-08
+-- (migration-2026-08-08-remover-crefito-encriptado.sql). Existiam desde o
+-- schema.sql original mas nunca funcionaram de verdade (search_path errado
+-- pra achar pgp_sym_encrypt) e nenhuma tela do app as chamava — só ficavam
+-- ali com uma chave de criptografia fixa no código, versionada no Git, sem
+-- proteger nenhum dado real. Removidas em vez de "consertadas" porque não
+-- havia uso nenhum pra justificar reconstruir com chave em cofre (Vault).
+-- Se um dia precisar de verdade encriptar o CREFITO, refazer do zero com a
+-- chave no Supabase Vault, não fixa no SQL.
 
 -- Notificações quando um pedido compatível é criado. TODO de schema.sql:
 -- hoje só conta quantos fisios seriam notificáveis, não envia nada de
@@ -1647,6 +1607,11 @@ end $$;
 --   alguma proteção, mas captcha reduziria bots de verdade — requer criar
 --   conta num provedor (hCaptcha ou Turnstile) e mexer no formulário de
 --   cadastro. Feature nova, fora do escopo deste arquivo.
--- - hc_encriptar_crefito / hc_descriptografar_crefito continuam quebradas e
---   sem uso real (ver comentário acima, seção ADMIN).
+-- - crefito e observacoes (pedidos) são guardados em texto puro nas
+--   colunas normais (crefito, observacoes) — as colunas *_encrypted nunca
+--   foram escritas por nenhuma RPC. CREFITO é um dado público (registro
+--   profissional), mas "observacoes" pode conter detalhe de saúde do
+--   paciente; hoje só RLS protege isso, não há criptografia em repouso.
+--   Encriptar de verdade exigiria chave no Supabase Vault + mudar as RPCs
+--   de criar/ler pedido — feature nova, fora do escopo deste arquivo.
 -- ============================================================================

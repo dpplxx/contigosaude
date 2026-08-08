@@ -8,14 +8,12 @@
 -- (deletado_em), então some das buscas e do painel sem quebrar históricos
 -- de agendamento/avaliação de quem já teve atendimento.
 --
--- O QUE ELA NÃO FAZ: não apaga a linha em auth.users (o login em si).
--- Apagar auth.users exige a Admin API do Supabase com a service role key
--- (supabase.auth.admin.deleteUser), que só dá pra chamar de uma Edge
--- Function ou de um backend com essa chave — nunca do client, e nunca de
--- uma função "security definer" comum. Fica registrado aqui pra quem for
--- fechar esse ponto depois: precisa de uma Edge Function dedicada.
--- Por ora, o client força signOut() logo após chamar isto, então na
--- prática a conta fica sem nenhum dado pessoal e sem sessão ativa.
+-- O QUE ELA NÃO FAZ: não apaga a linha em auth.users (o login em si) —
+-- isso exige a Admin API do Supabase com a service role key, que uma
+-- função "security definer" comum não tem acesso. Quem apaga o login de
+-- verdade é a Edge Function supabase/functions/excluir-conta, que chama
+-- esta RPC e depois auth.admin.deleteUser(). O client (src/lib/api.js,
+-- excluirMinhaConta) chama a Edge Function, não esta RPC diretamente.
 create or replace function public.hc_excluir_minha_conta()
 returns void
 language plpgsql
