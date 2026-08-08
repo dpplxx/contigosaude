@@ -223,6 +223,31 @@ alter table public.admins enable row level security;
 -- pra "HELPERS" mais abaixo quebra a ordem de criação: SQL processa o
 -- arquivo de cima pra baixo, então uma policy não pode chamar uma função
 -- que ainda não existe.
+-- MFA (migration-2026-08-08-mfa.sql): implementa o padrão oficial do
+-- Supabase pra "aplicação opcional" de aal2 — só exige o segundo fator de
+-- quem já tem um fator verificado. Quem nunca ativou MFA (todo paciente,
+-- hoje) continua liberado em aal1 sem nenhuma mudança.
+create or replace function public.hc_aal_suficiente()
+returns boolean
+language sql
+stable
+as $$
+  select case
+    when exists (
+      select 1 from auth.mfa_factors
+      where user_id = auth.uid() and status = 'verified'
+    )
+    then (select auth.jwt() ->> 'aal') = 'aal2'
+    else true
+  end;
+$$;
+
+revoke all on function public.hc_aal_suficiente() from public, anon;
+grant execute on function public.hc_aal_suficiente() to authenticated;
+
+-- Mesma checagem de sempre (conta na tabela admins) + exige aal2 se a conta
+-- tiver MFA ativado. Admin que ainda não passou pelo desafio nesta sessão é
+-- tratado como "não admin" até verificar — falha fechada, não aberta.
 create or replace function public.hc_e_admin()
 returns boolean
 language sql
@@ -230,7 +255,8 @@ stable
 security definer
 set search_path = public, pg_temp
 as $$
-  select exists (select 1 from admins where user_id = auth.uid());
+  select exists (select 1 from admins where user_id = auth.uid())
+     and public.hc_aal_suficiente();
 $$;
 
 grant execute on function public.hc_e_admin() to authenticated;
@@ -394,6 +420,68 @@ begin
       );
   end if;
 end $$;
+
+-- ============================================================================
+-- RATE LIMITING GENÉRICO (migration-2026-08-08-rate-limiting.sql)
+--
+-- Mesmo espírito do bloqueio de login (tentativas_login, mais abaixo): um
+-- contador por (chave, ação) numa janela de tempo, que zera sozinho quando
+-- a janela expira. hc_checar_limite não é exposta pro cliente — só outras
+-- funções security definer chamam.
+-- ============================================================================
+
+create table if not exists public.limite_acoes (
+  chave text not null,
+  acao text not null,
+  contador int not null default 0,
+  janela_inicio timestamptz not null default now(),
+  primary key (chave, acao)
+);
+
+alter table public.limite_acoes enable row level security;
+-- Sem policy nenhuma pra anon/authenticated: só hc_checar_limite (security
+-- definer) toca essa tabela.
+
+create or replace function public.hc_checar_limite(
+  p_chave text,
+  p_acao text,
+  p_max int,
+  p_janela_minutos int
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_registro record;
+begin
+  select * into v_registro from limite_acoes
+  where chave = p_chave and acao = p_acao
+  for update;
+
+  if v_registro is null then
+    insert into limite_acoes (chave, acao, contador, janela_inicio)
+    values (p_chave, p_acao, 1, now());
+    return true;
+  end if;
+
+  if v_registro.janela_inicio < now() - (p_janela_minutos || ' minutes')::interval then
+    update limite_acoes set contador = 1, janela_inicio = now()
+    where chave = p_chave and acao = p_acao;
+    return true;
+  end if;
+
+  if v_registro.contador >= p_max then
+    return false;
+  end if;
+
+  update limite_acoes set contador = contador + 1
+  where chave = p_chave and acao = p_acao;
+  return true;
+end $$;
+
+revoke all on function public.hc_checar_limite(text, text, int, int) from public, anon, authenticated;
 
 -- ============================================================================
 -- LIMPEZA DE ASSINATURAS ANTIGAS (defensivo)
@@ -578,6 +666,10 @@ begin
     raise exception 'Você já tem pedidos abertos. Aguarde o contato da equipe.';
   end if;
 
+  if not hc_checar_limite('pedido:' || v_uid::text, 'criar_pedido', 3, 10) then
+    raise exception 'Muitos pedidos em pouco tempo. Aguarde alguns minutos e tente de novo.';
+  end if;
+
   insert into pedidos (
     nome, whatsapp, especialidade, cidade, bairro, urgencia, observacoes,
     cep, uf, lat, lng, user_id
@@ -647,6 +739,10 @@ declare
 begin
   if v_uid is null then
     raise exception 'Você precisa estar logado para se cadastrar.';
+  end if;
+
+  if not hc_checar_limite('cadastro_fisio:' || v_uid::text, 'cadastrar_fisio', 10, 10) then
+    raise exception 'Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente de novo.';
   end if;
 
   if length(coalesce(trim(p_nome), '')) < 2 then
@@ -1001,6 +1097,10 @@ begin
     raise exception 'Sem permissão para esta conversa.';
   end if;
 
+  if not hc_checar_limite('msg:' || auth.uid()::text, 'mensagem', 20, 1) then
+    raise exception 'Você está enviando mensagens rápido demais. Aguarde um minuto.';
+  end if;
+
   insert into mensagens (agendamento_id, remetente, remetente_nome, texto)
   values (p_agendamento_id, p_remetente, trim(p_remetente_nome), trim(p_texto))
   returning id into v_id;
@@ -1030,6 +1130,16 @@ as $$
 declare
   v_fisio fisios%rowtype;
 begin
+  -- MFA (migration-2026-08-08-mfa.sql): esta função devolve nome/WhatsApp/
+  -- observações dos pacientes do fisio logado — a maior superfície de dado
+  -- sensível do lado fisio, por isso exige aal2 de quem já ativou o
+  -- segundo fator. O app já checa isso antes de chamar (mostra a tela de
+  -- desafio primeiro); isso aqui é a garantia de que não dá pra pular
+  -- chamando o RPC direto.
+  if not public.hc_aal_suficiente() then
+    raise exception 'Complete a verificação em duas etapas para continuar.';
+  end if;
+
   select * into v_fisio from fisios where user_id = auth.uid() limit 1;
 
   if v_fisio.id is null then
@@ -1387,26 +1497,44 @@ grant execute on function public.hc_anonimizar_paciente(uuid) to authenticated;
 -- versionado no Git — não protege nada de verdade. Uma criptografia real
 -- precisaria da chave em um cofre de segredos (Vault do Supabase), não no
 -- SQL. Corrigir isso é trabalho pra uma migração nova, não pra este arquivo.
+-- RBAC (migration-2026-08-08-rbac-crefito.sql): estas duas funções não são
+-- chamadas por nenhuma tela do app (sobra de uma criptografia que nunca foi
+-- ligada) e estavam liberadas demais — encriptar pra "anon" (qualquer
+-- visitante sem login) e descriptografar pra qualquer conta autenticada,
+-- não só admin. Restrito a admin agora; sem uso hoje, então não muda nada
+-- pra ninguém que já usa o app.
 create or replace function public.hc_encriptar_crefito(p_crefito text)
 returns text
-language sql
+language plpgsql
 security definer
 set search_path = public, pg_temp
 as $$
-  select pgp_sym_encrypt(p_crefito, 'chave-segura-fisio-em-casa-2026');
-$$;
+begin
+  if not hc_e_admin() then
+    raise exception 'Sem permissão. Esta ação é restrita a administradores.';
+  end if;
 
-grant execute on function public.hc_encriptar_crefito(text) to anon, authenticated;
+  return pgp_sym_encrypt(p_crefito, 'chave-segura-fisio-em-casa-2026');
+end $$;
+
+revoke all on function public.hc_encriptar_crefito(text) from public, anon, authenticated;
+grant execute on function public.hc_encriptar_crefito(text) to authenticated;
 
 create or replace function public.hc_descriptografar_crefito(p_encrypted text)
 returns text
-language sql
+language plpgsql
 security definer
 set search_path = public, pg_temp
 as $$
-  select pgp_sym_decrypt(p_encrypted::bytea, 'chave-segura-fisio-em-casa-2026');
-$$;
+begin
+  if not hc_e_admin() then
+    raise exception 'Sem permissão. Esta ação é restrita a administradores.';
+  end if;
 
+  return pgp_sym_decrypt(p_encrypted::bytea, 'chave-segura-fisio-em-casa-2026');
+end $$;
+
+revoke all on function public.hc_descriptografar_crefito(text) from public, anon, authenticated;
 grant execute on function public.hc_descriptografar_crefito(text) to authenticated;
 
 -- Notificações quando um pedido compatível é criado. TODO de schema.sql:

@@ -55,6 +55,7 @@ import {
   waLink,
 } from "../lib/utils";
 import { formatarDistancia } from "../lib/geo";
+import { MfaConfiguracao } from "./MFA";
 
 function AgendarForm({ pedido, fisios, onCreated }) {
   const [open, setOpen] = useState(false);
@@ -554,7 +555,7 @@ function RequestCard({ r, fisios, agendamentos, area, onRefresh, onArchive }) {
   );
 }
 
-export function Painel({ dados, loading, erro, onRefresh }) {
+export function Painel({ dados, loading, erro, onRefresh, onToast }) {
   const { fisios, pedidos, agendamentos, avaliacoes, mensagens } = dados;
   const [area, setArea] = useState("ativos");
   const [filtroRegiao, setFiltroRegiao] = useState("");
@@ -646,6 +647,8 @@ export function Painel({ dados, loading, erro, onRefresh }) {
           chat entre paciente e fisioterapeuta.
         </p>
       </Card>
+
+      <MfaConfiguracao onToast={onToast} />
 
       <ModeracaoAvaliacoes />
 

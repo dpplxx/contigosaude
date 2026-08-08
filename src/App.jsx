@@ -16,6 +16,7 @@ import { PhysioForm } from "./components/Fisio";
 import { AuthEmail, DefinirNovaSenha } from "./components/AuthEmail";
 import { Painel } from "./components/Painel";
 import { Login } from "./components/Login";
+import { MfaChallenge } from "./components/MFA";
 
 // A biblioteca de gráficos é o maior pedaço do bundle e só a área restrita usa.
 // Carregar sob demanda deixa a home do paciente bem mais leve no celular.
@@ -32,6 +33,7 @@ import {
   sessaoAtual,
 } from "./lib/api";
 import { supabaseConfigurado } from "./lib/supabase";
+import { statusMfa } from "./lib/mfa";
 import { mensagemDeErro } from "./lib/utils";
 import { ativarPush, pushSuportado } from "./lib/push";
 import { initSession, trackEvent, Events } from "./lib/analytics";
@@ -158,6 +160,7 @@ export default function App() {
   const [sessao, setSessao] = useState(null);
   const [souAdmin, setSouAdmin] = useState(false);
   const [souFisio, setSouFisio] = useState(false);
+  const [statusSessaoMfa, setStatusSessaoMfa] = useState({ verificando: false, precisaDesafio: false });
   const [dadosPainel, setDadosPainel] = useState(PAINEL_VAZIO);
   const [loadingPainel, setLoadingPainel] = useState(false);
   const [erroPainel, setErroPainel] = useState("");
@@ -244,6 +247,33 @@ export default function App() {
     };
   }, [sessao]);
 
+  // MFA: quando a conta logada já tem um segundo fator verificado, a sessão
+  // recém-aberta com senha fica em aal1 até passar pelo desafio — enquanto
+  // isso, o Painel e o painel do fisio recusam os dados (as funções do
+  // banco agora exigem aal2 de quem ativou MFA, ver migration-2026-08-08-
+  // mfa.sql). Sem essa checagem aqui, o app mostraria essas telas vazias/
+  // com erro em vez de pedir o código primeiro. "verificando" cobre a
+  // janela entre a sessão aparecer e a checagem terminar, pra não piscar o
+  // conteúdo protegido por uma fração de segundo antes de travar.
+  useEffect(() => {
+    if (!sessao) {
+      setStatusSessaoMfa({ verificando: false, precisaDesafio: false });
+      return;
+    }
+    let ativo = true;
+    setStatusSessaoMfa({ verificando: true, precisaDesafio: false });
+    statusMfa()
+      .then(({ precisaDesafio }) => {
+        if (ativo) setStatusSessaoMfa({ verificando: false, precisaDesafio });
+      })
+      .catch(() => {
+        if (ativo) setStatusSessaoMfa({ verificando: false, precisaDesafio: false });
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [sessao]);
+
   const recarregarPainel = useCallback(async () => {
     if (!sessao) return;
     setLoadingPainel(true);
@@ -266,15 +296,30 @@ export default function App() {
   }, [sessao]);
 
   const areaRestrita = role === "painel" || role === "metricas";
+  const bloqueadoPorMfa =
+    Boolean(sessao) && (statusSessaoMfa.verificando || statusSessaoMfa.precisaDesafio);
 
   useEffect(() => {
-    if (sessao && areaRestrita) recarregarPainel();
-  }, [sessao, areaRestrita, recarregarPainel]);
+    if (sessao && areaRestrita && !bloqueadoPorMfa) recarregarPainel();
+  }, [sessao, areaRestrita, bloqueadoPorMfa, recarregarPainel]);
 
   const fazerLogout = async () => {
     await sair();
     setDadosPainel(PAINEL_VAZIO);
     addToast("Você saiu da área restrita.");
+  };
+
+  const confirmarMfa = () => {
+    setStatusSessaoMfa({ verificando: false, precisaDesafio: false });
+  };
+
+  // Sai da conta em vez de deixar presa em aal1: sem o código em mãos,
+  // não tem como avançar, e ficar logada travada na tela de desafio sem
+  // saída seria pior do que simplesmente voltar pro login.
+  const cancelarMfa = async () => {
+    await sair();
+    setSessao(null);
+    setStatusSessaoMfa({ verificando: false, precisaDesafio: false });
   };
 
   const confirmarExclusaoConta = async () => {
@@ -344,7 +389,7 @@ export default function App() {
         </div>
       )}
 
-      {!recuperandoSenha && !confirmandoExclusao && (
+      {!recuperandoSenha && !confirmandoExclusao && !bloqueadoPorMfa && (
         <div className="max-w-3xl mx-auto px-4 sm:px-6 flex gap-2 pb-3 flex-wrap">
           {(!souFisio || souAdmin) && (
             <RoleButton active={role === "paciente"} onClick={() => setRole("paciente")}>
@@ -377,6 +422,16 @@ export default function App() {
               addToast("Senha atualizada! Você já está logada.");
             }}
           />
+        ) : bloqueadoPorMfa ? (
+          statusSessaoMfa.verificando ? (
+            <Card>
+              <p className="text-sm" style={{ color: "var(--muted1)" }}>
+                Verificando sua conta...
+              </p>
+            </Card>
+          ) : (
+            <MfaChallenge onVerificado={confirmarMfa} onCancelar={cancelarMfa} />
+          )
         ) : (
           <>
             {role === "paciente" && !sessao && !fisioNaUrl && (
@@ -405,6 +460,7 @@ export default function App() {
                 loading={loadingPainel}
                 erro={erroPainel}
                 onRefresh={recarregarPainel}
+                onToast={addToast}
               />
             )}
             {role === "metricas" && sessao && autorizada && (

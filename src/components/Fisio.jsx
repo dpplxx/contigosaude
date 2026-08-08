@@ -37,6 +37,7 @@ import {
   telefoneCompleto,
 } from "../lib/utils";
 import { TurnstileWidget, turnstileConfigurado } from "../lib/turnstile";
+import { MfaConfiguracao } from "./MFA";
 import {
   CODIGO_ETICA_CREFITO,
   POLITICA_PRIVACIDADE,
@@ -343,6 +344,8 @@ export function PhysioForm({ onToast }) {
   return (
     <div className="space-y-4">
       <PrototypeWarning />
+
+      {editando && <MfaConfiguracao onToast={onToast} />}
 
       {editando && (
         <Card>
