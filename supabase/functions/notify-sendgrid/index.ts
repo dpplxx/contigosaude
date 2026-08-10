@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "npm:@supabase/supabase-js@2"
 
 // CORS: antes esta função respondia "Access-Control-Allow-Origin: *" —
 // qualquer site da internet podia chamar. Restrito à lista de origens que o
@@ -23,10 +24,51 @@ function corsHeaders(req) {
   return headers
 }
 
+// Sem isso, qualquer um com a anon key (é pública, vai pro navegador de
+// todo mundo) podia chamar esta function direto e mandar email arbitrário
+// saindo de contato@contigosaude.com.br — um relay de phishing de graça.
+// Só quem tem uma sessão válida no app pode disparar.
+async function usuarioAutenticado(req: Request) {
+  const authHeader = req.headers.get("authorization")
+  if (!authHeader) return null
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")
+  if (!supabaseUrl || !anonKey) return null
+
+  const db = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  })
+  const { data, error } = await db.auth.getUser()
+  if (error || !data?.user) return null
+  return data.user
+}
+
+// Escapa os campos que vêm do chamador antes de colocar no HTML do email —
+// sem isso, alguém podia mandar `especialidade` ou `nome_paciente` com tags
+// HTML e injetar conteúdo (ex: outro link de "phishing") no email que sai
+// do domínio da empresa.
+function escaparHtml(valor: unknown): string {
+  return String(valor ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+
 serve(async (req) => {
   const cors = corsHeaders(req)
   if (req.method === "OPTIONS") {
     return new Response("OK", { headers: cors })
+  }
+
+  const usuario = await usuarioAutenticado(req)
+  if (!usuario) {
+    return new Response(JSON.stringify({ error: "Não autenticado." }), {
+      status: 401,
+      headers: cors,
+    })
   }
 
   const {
@@ -48,8 +90,8 @@ serve(async (req) => {
 
   const emailBody = `
     <h2>🏥 Novo pedido de fisioterapia!</h2>
-    <p>Um paciente solicitou atendimento de <strong>${especialidade}</strong> em <strong>${cidade}, ${bairro}</strong>.</p>
-    <p><strong>Paciente:</strong> ${nome_paciente}</p>
+    <p>Um paciente solicitou atendimento de <strong>${escaparHtml(especialidade)}</strong> em <strong>${escaparHtml(cidade)}, ${escaparHtml(bairro)}</strong>.</p>
+    <p><strong>Paciente:</strong> ${escaparHtml(nome_paciente)}</p>
     <p>Acesse seu painel para ver os detalhes e entrar em contato.</p>
     <a href="https://dpplxx.github.io/contigosaude/" style="display: inline-block; background: #E3A873; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">Ver painel</a>
   `

@@ -235,7 +235,7 @@ export async function entrar(email, senha) {
     throw error;
   }
 
-  rpc("hc_limpar_tentativas_login", { p_email: emailNormalizado }).catch(() => {});
+  rpc("hc_limpar_tentativas_login").catch(() => {});
   return data.session;
 }
 

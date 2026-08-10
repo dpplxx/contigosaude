@@ -14,6 +14,8 @@
 // Chamada esperada (POST, JSON): { "token": "..." }
 // Resposta: { "valido": true|false }
 
+import { createClient } from "npm:@supabase/supabase-js@2";
+
 // CORS: antes esta função respondia "Access-Control-Allow-Origin: *" —
 // qualquer site da internet podia chamar. Restrito à lista de origens que o
 // app realmente usa (domínio de produção, app nativo Android/iOS via
@@ -38,6 +40,9 @@ function corsHeaders(req: Request): HeadersInit {
 }
 
 const TURNSTILE_SECRET_KEY = Deno.env.get("TURNSTILE_SECRET_KEY")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
 Deno.serve(async (req) => {
   const cors = corsHeaders(req);
@@ -64,8 +69,31 @@ Deno.serve(async (req) => {
   });
 
   const resultado = await resposta.json();
+  const valido = resultado.success === true;
 
-  return new Response(JSON.stringify({ valido: resultado.success === true }), {
+  // Grava a verificação pro auth.uid() de quem chamou, pra hc_cadastrar_fisio
+  // poder confirmar server-side que ESSA conta passou pelo Turnstile antes
+  // de aceitar um cadastro novo — antes disso, o widget no navegador só
+  // travava o botão, e quem chamasse a RPC direto (fora da UI) pulava o
+  // captcha inteiro. Ver migration-2026-08-09-turnstile-server-side.sql.
+  if (valido && SUPABASE_URL && SERVICE_ROLE_KEY && ANON_KEY) {
+    const authHeader = req.headers.get("authorization");
+    if (authHeader) {
+      const asUser = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: userData } = await asUser.auth.getUser();
+      const userId = userData?.user?.id;
+      if (userId) {
+        const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+        await admin
+          .from("turnstile_verificacoes")
+          .upsert({ user_id: userId, verificado_em: new Date().toISOString() });
+      }
+    }
+  }
+
+  return new Response(JSON.stringify({ valido }), {
     headers: { ...cors, "Content-Type": "application/json" },
   });
 });

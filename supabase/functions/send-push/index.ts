@@ -50,6 +50,14 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY")!;
 const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:contato@contigosaude.com.br";
+// Segredo compartilhado só com o trigger do Postgres (hc_disparar_push, ver
+// migration-2026-08-09-fix-send-push-auth.sql) — sem isso, qualquer um com
+// a anon key podia chamar esta function com um userId arbitrário e ler/
+// mandar push pra inscrição de qualquer conta, já que a Authorization
+// sozinha (a anon key) não prova quem está chamando. Configure com
+// `supabase secrets set PUSH_INTERNAL_SECRET=<valor>` — o mesmo valor vai
+// pro Postgres via ALTER DATABASE (ver a migration).
+const PUSH_INTERNAL_SECRET = Deno.env.get("PUSH_INTERNAL_SECRET");
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
@@ -57,6 +65,13 @@ Deno.serve(async (req) => {
   const cors = corsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response("OK", { headers: cors });
+  }
+
+  if (!PUSH_INTERNAL_SECRET || req.headers.get("x-internal-secret") !== PUSH_INTERNAL_SECRET) {
+    return new Response(JSON.stringify({ error: "Não autorizado." }), {
+      status: 401,
+      headers: cors,
+    });
   }
 
   const { userId, titulo, corpo, url } = await req.json();
