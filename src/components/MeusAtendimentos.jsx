@@ -1,9 +1,48 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, MapPin, Stethoscope } from "lucide-react";
 import { Card, ErroInline, StarInput, StatusBadge, TextArea, Vazio } from "./ui";
-import { avaliar, meusPedidos } from "../lib/api";
+import { avaliar, confirmarAtendimento, meusPedidos } from "../lib/api";
 import { dataMaisDias, diasDesdeData, formatDataHora, mensagemDeErro } from "../lib/utils";
 import { trackEvent, Events } from "../lib/analytics";
+
+// Etapa entre o fisio marcar "concluído" e o paciente poder avaliar: o
+// paciente confirma que o atendimento aconteceu de verdade. Sem isso,
+// hc_avaliar recusa a avaliação (Contigo Qualidade só conta avaliação
+// verificada por essa confirmação).
+function ConfirmarAtendimento({ agendamento, onConfirmado }) {
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState("");
+
+  const confirmar = async () => {
+    setSalvando(true);
+    setErro("");
+    try {
+      await confirmarAtendimento(agendamento.id);
+      onConfirmado?.();
+    } catch (e) {
+      setErro(mensagemDeErro(e, "Não foi possível confirmar o atendimento."));
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+      <p className="text-sm mb-2" style={{ color: "var(--muted1)" }}>
+        O atendimento com {agendamento.fisio.nome} aconteceu?
+      </p>
+      <ErroInline>{erro}</ErroInline>
+      <button
+        onClick={confirmar}
+        disabled={salvando}
+        className="text-sm px-4 py-1.5 rounded-full disabled:opacity-50"
+        style={{ background: "#009E86", color: "#FFFFFF" }}
+      >
+        {salvando ? "Confirmando..." : "Sim, o atendimento aconteceu"}
+      </button>
+    </div>
+  );
+}
 
 export function AvaliarAtendimento({ agendamento, onAvaliado, comBorda = true }) {
   const [nota, setNota] = useState(0);
@@ -97,14 +136,23 @@ function CartaPedido({ pedido, onAvaliado }) {
             <Stethoscope size={14} /> {ag.fisio.nome} — {formatDataHora(ag.data, ag.horario)}
           </p>
 
-          {ag.status === "concluido" && !ag.avaliado && diasDesdeData(ag.data) >= 7 && (
-            <AvaliarAtendimento agendamento={ag} onAvaliado={onAvaliado} />
+          {ag.status === "concluido" && !ag.confirmado_paciente && (
+            <ConfirmarAtendimento agendamento={ag} onConfirmado={onAvaliado} />
           )}
-          {ag.status === "concluido" && !ag.avaliado && diasDesdeData(ag.data) < 7 && (
-            <p className="text-xs mt-3" style={{ color: "var(--muted3)" }}>
-              Você poderá avaliar esse atendimento a partir de {dataMaisDias(ag.data, 7)}.
-            </p>
-          )}
+          {ag.status === "concluido" &&
+            ag.confirmado_paciente &&
+            !ag.avaliado &&
+            diasDesdeData(ag.data) >= 7 && (
+              <AvaliarAtendimento agendamento={ag} onAvaliado={onAvaliado} />
+            )}
+          {ag.status === "concluido" &&
+            ag.confirmado_paciente &&
+            !ag.avaliado &&
+            diasDesdeData(ag.data) < 7 && (
+              <p className="text-xs mt-3" style={{ color: "var(--muted3)" }}>
+                Você poderá avaliar esse atendimento a partir de {dataMaisDias(ag.data, 7)}.
+              </p>
+            )}
           {ag.status === "concluido" && ag.avaliado && (
             <p className="text-sm flex items-center gap-1.5 mt-3" style={{ color: "#1F7A50" }}>
               <CheckCircle2 size={15} /> Você já avaliou este atendimento.

@@ -147,7 +147,57 @@ begin
 end $$;
 
 -- ----------------------------------------------------------------------------
--- hc_avaliar: paciente avalia normalmente
+-- hc_avaliar: exige status='concluido' e confirmado_paciente=true
+-- (Contigo Qualidade, migration-2026-08-11-contigo-qualidade.sql) — sem
+-- isso, mesmo com agendamento real, a avaliação é recusada.
+-- ----------------------------------------------------------------------------
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+do $$
+begin
+  begin
+    perform hc_avaliar('33333333-3333-3333-3333-333333333333', 5, 'Ainda nem concluiu');
+    raise exception 'TESTE FALHOU: hc_avaliar deveria recusar atendimento ainda não concluído/confirmado';
+  exception
+    when others then
+      if sqlerrm like 'TESTE FALHOU%' then raise; end if;
+      -- exceção esperada (nem concluído, nem confirmado) — ok
+  end;
+end $$;
+
+-- O fisio marca como concluído...
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+do $$
+begin
+  perform hc_marcar_status_agendamento(
+    (select id from agendamentos where pedido_id = '55555555-5555-5555-5555-555555555555'),
+    'concluido'
+  );
+end $$;
+
+-- ...mas ainda falta o paciente confirmar.
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+do $$
+begin
+  begin
+    perform hc_avaliar('33333333-3333-3333-3333-333333333333', 5, 'Concluído mas não confirmado');
+    raise exception 'TESTE FALHOU: hc_avaliar deveria recusar atendimento concluído mas não confirmado pelo paciente';
+  exception
+    when others then
+      if sqlerrm like 'TESTE FALHOU%' then raise; end if;
+      -- exceção esperada (falta confirmar) — ok
+  end;
+end $$;
+
+do $$
+begin
+  perform hc_confirmar_atendimento(
+    (select id from agendamentos where pedido_id = '55555555-5555-5555-5555-555555555555')
+  );
+end $$;
+
+-- ----------------------------------------------------------------------------
+-- hc_avaliar: paciente avalia normalmente, depois de concluído e confirmado
 -- ----------------------------------------------------------------------------
 
 do $$

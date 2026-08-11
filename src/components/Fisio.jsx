@@ -13,6 +13,7 @@ import {
   PhoneInput,
   PrimaryButton,
   SelectInput,
+  SeloQualidade,
   StatusBadge,
   TagInput,
   TextArea,
@@ -149,6 +150,7 @@ export function PhysioForm({ onToast }) {
   const [enviandoFoto, setEnviandoFoto] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
   const [crefitoStatus, setCrefitoStatus] = useState(null);
+  const [qualidade, setQualidade] = useState(null);
   const [agendamentos, setAgendamentos] = useState([]);
   const fileInputRef = useRef(null);
 
@@ -189,6 +191,7 @@ export function PhysioForm({ onToast }) {
           declaracaoResponsabilidade: true,
         });
         setCrefitoStatus(f.crefito_status || null);
+        setQualidade(f.qualidade || null);
         setAgendamentos(dados.agendamentos || []);
         setEditando(true);
       })
@@ -346,6 +349,12 @@ export function PhysioForm({ onToast }) {
       <PrototypeWarning />
 
       {editando && <MfaConfiguracao onToast={onToast} />}
+
+      {editando && qualidade && (
+        <Card>
+          <SeloQualidade qualidade={qualidade} variante="completo" />
+        </Card>
+      )}
 
       {editando && (
         <Card>

@@ -368,6 +368,12 @@ export function marcarStatusAgendamento(id, status) {
   return rpc("hc_marcar_status_agendamento", { p_agendamento_id: id, p_status: status });
 }
 
+// O paciente confirma que o atendimento aconteceu de verdade — só depois
+// disso hc_avaliar aceita a avaliação (Contigo Qualidade).
+export function confirmarAtendimento(agendamentoId) {
+  return rpc("hc_confirmar_atendimento", { p_agendamento_id: agendamentoId });
+}
+
 export function avaliarPeloPainel({ fisioId, nota, comentario, nomeAvaliador }) {
   return rpc("hc_admin_avaliar", {
     p_fisio_id: fisioId,

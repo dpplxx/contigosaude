@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { MapPin, Phone, MessageCircle, Loader, ShieldCheck, Star, ChevronDown, ChevronUp, Flag, Share2, Check } from "lucide-react";
-import { Card, Field, TextInput, SelectInput, PrimaryButton, StarRow } from "./ui";
+import { Card, Field, TextInput, SelectInput, PrimaryButton, StarRow, SeloQualidade } from "./ui";
 import { CepInput } from "./Compartilhados";
 import {
   ESPECIALIDADES_PACIENTE,
@@ -646,6 +646,7 @@ function CartaFisio({ fisio, onAbrirPerfil }) {
               {fisio.total_avaliacoes === 1 ? "avaliação" : "avaliações"})
             </span>
           )}
+          <SeloQualidade qualidade={fisio.qualidade} />
         </div>
 
         {fisio.total_avaliacoes > 0 && <AvaliacoesFisio fisioId={fisio.id} />}
@@ -836,6 +837,10 @@ function PerfilCompartilhado({ fisio, onVoltar }) {
               </span>
             </div>
           )}
+
+          <div className="w-full mt-4">
+            <SeloQualidade qualidade={fisio.qualidade} variante="completo" />
+          </div>
 
           {fisio.especialidades?.length > 0 && (
             <div className="flex flex-wrap justify-center gap-2 mt-5">

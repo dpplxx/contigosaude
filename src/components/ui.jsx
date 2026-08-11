@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CheckCircle2, Loader2, Star, AlertCircle } from "lucide-react";
 import { formatarTelefone, STATUS_LABEL } from "../lib/utils";
+import { NIVEIS_QUALIDADE, TEXTO_SELO_NAO_COMPRAVEL } from "../lib/qualidade";
 
 export const inputBase =
   "w-full rounded-lg px-3.5 py-2.5 text-[15px] outline-none transition-colors border";
@@ -205,6 +206,60 @@ export function StarInput({ value, onChange, size = 26 }) {
           <Star size={size} fill={n <= value ? "#16C4A8" : "none"} style={{ color: "#16C4A8" }} />
         </button>
       ))}
+    </div>
+  );
+}
+
+// Contigo Qualidade — mesma paleta discreta do resto do app (teal), com o
+// nível "Destaque" em um tom dourado suave pra se diferenciar sem parecer
+// selo de aplicativo de entrega. Nível 0 ("Novo no Contigo") não aparece
+// na versão compacta — um cadastro novo já não mostra estrelas hoje, e
+// mostrar um selo vazio ali chamaria mais atenção pra ausência do que o
+// silêncio já chama.
+const CORES_NIVEL_QUALIDADE = {
+  0: { bg: "var(--card-inner)", fg: "var(--muted2)", bd: "var(--border)" },
+  1: { bg: "#009E8622", fg: "#007F6C", bd: "#009E8655" },
+  2: { bg: "#009E8622", fg: "#007F6C", bd: "#009E8655" },
+  3: { bg: "#16C4A833", fg: "#0F7A67", bd: "#16C4A855" },
+  4: { bg: "#F4B44026", fg: "#8A5D0F", bd: "#F4B44066" },
+};
+
+export function SeloQualidade({ qualidade, variante = "compacto" }) {
+  const info = NIVEIS_QUALIDADE[qualidade?.nivel ?? 0];
+  const cor = CORES_NIVEL_QUALIDADE[info.nivel];
+
+  if (variante === "compacto") {
+    if (info.nivel === 0) return null;
+    return (
+      <span
+        className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border"
+        style={{ background: cor.bg, color: cor.fg, borderColor: cor.bd }}
+        title={info.descricao}
+      >
+        {info.emoji} {info.label}
+      </span>
+    );
+  }
+
+  return (
+    <div className="w-full text-left">
+      <p className="text-xs uppercase tracking-wide mb-1.5" style={{ color: "var(--muted2)" }}>
+        Contigo Qualidade
+      </p>
+      <span
+        className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full border"
+        style={{ background: cor.bg, color: cor.fg, borderColor: cor.bd }}
+      >
+        {info.emoji} {info.label}
+      </span>
+      <p className="text-xs mt-2 leading-relaxed" style={{ color: "var(--muted2)" }}>
+        {info.descricao}
+      </p>
+      {info.nivel > 0 && (
+        <p className="text-xs mt-1.5 leading-relaxed" style={{ color: "var(--muted3)" }}>
+          {TEXTO_SELO_NAO_COMPRAVEL}
+        </p>
+      )}
     </div>
   );
 }

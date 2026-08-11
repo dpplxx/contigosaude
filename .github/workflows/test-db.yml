@@ -69,3 +69,6 @@ jobs:
 
       - name: Rodar testes das RPCs de confiança
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/01-rpc-confianca.sql
+
+      - name: Rodar testes do Contigo Qualidade
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/02-contigo-qualidade.sql

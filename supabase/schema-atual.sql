@@ -145,7 +145,12 @@ create table if not exists public.agendamentos (
   -- soube exibi-los. Fica só o conjunto original.
   status text not null default 'agendado'
     check (status in ('agendado', 'concluido', 'cancelado')),
-  criado_em timestamptz not null default now()
+  criado_em timestamptz not null default now(),
+  -- Contigo Qualidade (migration-2026-08-11-contigo-qualidade.sql): o fisio
+  -- marca "concluído", mas só conta como avaliação verificada depois que o
+  -- PACIENTE também confirma que o atendimento aconteceu de verdade.
+  confirmado_paciente boolean not null default false,
+  confirmado_em timestamptz
 );
 
 create table if not exists public.avaliacoes (
@@ -156,8 +161,14 @@ create table if not exists public.avaliacoes (
   criado_em timestamptz not null default now(),
   -- Vínculo com o atendimento avaliado. Nunca devolvido por
   -- hc_avaliacoes_fisio (a tabela continua anônima pro público) — serve só
-  -- pra hc_avaliar impedir duas avaliações do mesmo atendimento.
-  agendamento_id uuid references public.agendamentos (id) on delete cascade
+  -- pra hc_avaliar impedir duas avaliações do mesmo atendimento, e pro
+  -- Contigo Qualidade distinguir avaliação verificada de avaliação manual
+  -- do admin (hc_admin_avaliar grava sem agendamento_id).
+  agendamento_id uuid references public.agendamentos (id) on delete cascade,
+  -- "Primeiro U." (hc_nome_curto), nunca o nome completo do paciente.
+  -- migration-2026-08-02-avaliacoes-moderacao.sql.
+  nome_avaliador text,
+  status text not null default 'publicada' check (status in ('publicada', 'removida'))
 );
 
 create table if not exists public.mensagens (
@@ -868,11 +879,131 @@ revoke all on function public.hc_registrar_clique(uuid) from public;
 grant execute on function public.hc_registrar_clique(uuid) to anon, authenticated;
 
 -- ============================================================================
+-- CONTIGO QUALIDADE — nível de reputação calculado a partir de avaliações
+-- verificadas (ligadas a um atendimento real, confirmado pelo paciente).
+-- ÚLTIMA FONTE: migration-2026-08-11-contigo-qualidade.sql.
+-- ============================================================================
+
+-- "Verificada" = status='publicada' (não removida por moderação) e
+-- agendamento_id preenchido — só entra por hc_avaliar (paciente real, que
+-- confirmou o atendimento), nunca por hc_admin_avaliar (lançamento manual
+-- do admin, sem agendamento_id, não conta pro nível).
+--
+-- Usa uma média bayesiana simples pra evitar que 1 avaliação de 5,0 valha
+-- o mesmo que 100 avaliações de 4,9: com poucas avaliações, a nota é
+-- puxada pra uma média neutra da plataforma; conforme o fisio acumula
+-- avaliações reais, a nota dele passa a pesar mais. Os limiares de cada
+-- nível são um ponto de partida, ajustável sem mexer em mais nada.
+create or replace function public.hc_qualidade_fisio(p_fisio_id uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_total integer;
+  v_media numeric;
+  v_global numeric;
+  v_ajustada numeric;
+  v_nivel integer;
+  v_perfil_completo boolean;
+  v_crefito_verificado boolean;
+  v_tem_removida boolean;
+  m constant numeric := 5;
+  c_padrao constant numeric := 4.5;
+begin
+  select count(*), avg(nota)
+  into v_total, v_media
+  from avaliacoes
+  where fisio_id = p_fisio_id and status = 'publicada' and agendamento_id is not null;
+
+  if v_total is null or v_total = 0 then
+    return jsonb_build_object(
+      'nivel', 0,
+      'total_verificadas', 0,
+      'nota_media', null,
+      'nota_ajustada', null
+    );
+  end if;
+
+  select avg(nota) into v_global
+  from avaliacoes
+  where status = 'publicada' and agendamento_id is not null;
+
+  v_ajustada := (v_total::numeric / (v_total + m)) * v_media
+              + (m / (v_total + m)) * coalesce(v_global, c_padrao);
+
+  select
+    (
+      foto_url is not null
+      and resumo is not null and trim(resumo) <> ''
+      and disponibilidade is not null and trim(disponibilidade) <> ''
+    ),
+    (crefito_status = 'verificado')
+  into v_perfil_completo, v_crefito_verificado
+  from fisios
+  where id = p_fisio_id;
+
+  select exists(
+    select 1 from avaliacoes where fisio_id = p_fisio_id and status = 'removida'
+  ) into v_tem_removida;
+
+  v_nivel := 1;
+  if v_total >= 8 and v_ajustada >= 4.5 then
+    v_nivel := 2;
+  end if;
+  if v_total >= 15 and v_ajustada >= 4.7 then
+    v_nivel := 3;
+  end if;
+  if v_total >= 30 and v_ajustada >= 4.8
+     and v_perfil_completo and v_crefito_verificado and not v_tem_removida then
+    v_nivel := 4;
+  end if;
+
+  return jsonb_build_object(
+    'nivel', v_nivel,
+    'total_verificadas', v_total,
+    'nota_media', round(v_media::numeric, 1),
+    'nota_ajustada', round(v_ajustada::numeric, 2)
+  );
+end $$;
+
+grant execute on function public.hc_qualidade_fisio(uuid) to anon, authenticated;
+
+-- Só o paciente dono do pedido confirma, e só depois que o fisio marcou
+-- como concluído.
+create or replace function public.hc_confirmar_atendimento(p_agendamento_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  update agendamentos a
+  set confirmado_paciente = true, confirmado_em = now()
+  from pedidos p
+  where a.id = p_agendamento_id
+    and p.id = a.pedido_id
+    and p.user_id = auth.uid()
+    and a.status = 'concluido';
+
+  if not found then
+    raise exception 'Não foi possível confirmar este atendimento.';
+  end if;
+end $$;
+
+revoke all on function public.hc_confirmar_atendimento(uuid) from public, anon;
+grant execute on function public.hc_confirmar_atendimento(uuid) to authenticated;
+
+-- ============================================================================
 -- BUSCA E LEITURA PÚBLICA (não exigem login — "modelo Uber": busca aberta,
 -- contato só depois)
 -- ============================================================================
 
--- ÚLTIMA FONTE: migration-confianca.sql (traz CREFITO e nota média).
+-- ÚLTIMA FONTE: migration-2026-08-11-contigo-qualidade.sql (nível de
+-- qualidade + desempate na busca; antes disso migration-2026-08-02-
+-- avaliacoes-moderacao.sql, que trouxe o filtro status='publicada').
 create or replace function public.hc_listar_fisios(
   p_especialidade text,
   p_cidade text,
@@ -898,11 +1029,14 @@ as $$
         'crefito', f.crefito,
         'crefito_uf', f.crefito_uf,
         'nota_media', (
-          select round(avg(a.nota)::numeric, 1) from avaliacoes a where a.fisio_id = f.id
+          select round(avg(a.nota)::numeric, 1) from avaliacoes a
+          where a.fisio_id = f.id and a.status = 'publicada'
         ),
         'total_avaliacoes', (
-          select count(*) from avaliacoes a where a.fisio_id = f.id
+          select count(*) from avaliacoes a
+          where a.fisio_id = f.id and a.status = 'publicada'
         ),
+        'qualidade', q.dados,
         'distancia_km',
           case
             when p_lat is not null and f.lat is not null
@@ -913,6 +1047,12 @@ as $$
       order by
         case
           when p_lat is not null and f.lat is not null
+          then floor(hc_distancia_km(f.lat, f.lng, p_lat, p_lng) / 2)
+          else 999
+        end,
+        coalesce((q.dados ->> 'nivel')::int, 0) desc,
+        case
+          when p_lat is not null and f.lat is not null
           then hc_distancia_km(f.lat, f.lng, p_lat, p_lng)
           else 999
         end,
@@ -921,6 +1061,7 @@ as $$
     '[]'::jsonb
   )
   from fisios f
+  cross join lateral (select public.hc_qualidade_fisio(f.id) as dados) q
   where hc_compativel(
     f.especialidades, f.cidade, f.bairros, f.lat, f.lng, f.raio_km,
     p_especialidade, p_cidade, p_bairro, p_lat, p_lng
@@ -977,13 +1118,63 @@ $$;
 
 grant execute on function public.hc_avaliacoes_fisio(uuid) to anon, authenticated;
 
+-- Perfil público individual do profissional — a página de perfil mostra
+-- todas as regiões atendidas (bairros completo), diferente do card da
+-- busca que mostra só a mais próxima por espaço. migration-perfil-
+-- publico.sql; ÚLTIMA FONTE: migration-2026-08-11-contigo-qualidade.sql
+-- (adicionou "qualidade").
+create or replace function public.hc_obter_fisio_publico(
+  p_fisio_id uuid
+)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select jsonb_build_object(
+    'id', f.id,
+    'nome', f.nome,
+    'formacao', f.formacao,
+    'foto_url', f.foto_url,
+    'whatsapp', f.whatsapp,
+    'bairros', f.bairros,
+    'cidade', f.cidade,
+    'uf', f.uf,
+    'crefito', f.crefito,
+    'crefito_uf', f.crefito_uf,
+    'crefito_status', f.crefito_status,
+    'especialidades', f.especialidades,
+    'resumo', f.resumo,
+    'disponibilidade', f.disponibilidade,
+    'nota_media', (
+      select round(avg(a.nota)::numeric, 1) from avaliacoes a
+      where a.fisio_id = f.id and a.status = 'publicada'
+    ),
+    'total_avaliacoes', (
+      select count(*) from avaliacoes a
+      where a.fisio_id = f.id and a.status = 'publicada'
+    ),
+    'qualidade', public.hc_qualidade_fisio(f.id),
+    'raio_km', f.raio_km
+  )
+  from public.fisios f
+  where f.id = p_fisio_id
+    and f.deletado_em is null;
+$$;
+
+revoke all on function public.hc_obter_fisio_publico(uuid) from public;
+grant execute on function public.hc_obter_fisio_publico(uuid) to anon, authenticated;
+
 -- ============================================================================
 -- LEITURA E AÇÕES DO PACIENTE — só a própria conta logada
 -- ============================================================================
 
--- ÚLTIMA FONTE: migration-paciente-auth.sql. Trocou de
--- "hc_meus_pedidos(whatsapp)" pra "hc_meus_pedidos()" sem parâmetro:
--- identidade só pela conta logada.
+-- ÚLTIMA FONTE: migration-2026-08-11-contigo-qualidade.sql (adiciona
+-- confirmado_paciente). Antes disso: migration-2026-08-04-avaliado-
+-- flag.sql (adicionou "avaliado"), e migration-paciente-auth.sql, que
+-- trocou de "hc_meus_pedidos(whatsapp)" pra "hc_meus_pedidos()" sem
+-- parâmetro: identidade só pela conta logada.
 create or replace function public.hc_meus_pedidos()
 returns jsonb
 language sql
@@ -1008,6 +1199,8 @@ as $$
             'data', a.data,
             'horario', a.horario,
             'status', a.status,
+            'confirmado_paciente', a.confirmado_paciente,
+            'avaliado', exists(select 1 from avaliacoes av where av.agendamento_id = a.id),
             'fisio', jsonb_build_object(
               'id', f.id,
               'nome', f.nome,
@@ -1118,9 +1311,11 @@ grant execute on function public.hc_enviar_mensagem(uuid, text, text, text) to a
 -- Painel do fisio: cadastro completo (pra pré-preencher o formulário de
 -- edição), agenda, pedidos compatíveis ainda sem fisio e avaliações
 -- recebidas.
--- ÚLTIMA FONTE do corpo: migration-foto-fisio.sql (adicionou foto_url ao
--- objeto "fisio"). As permissões finais foram reafirmadas depois por
--- migration-paciente-auth.sql.
+-- ÚLTIMA FONTE do corpo: migration-2026-08-11-contigo-qualidade.sql
+-- (adicionou "qualidade" ao objeto "fisio", pra ele ver o próprio selo).
+-- Antes disso: migration-foto-fisio.sql (adicionou foto_url). As
+-- permissões finais foram reafirmadas depois por migration-paciente-
+-- auth.sql.
 create or replace function public.hc_meu_painel_fisio()
 returns jsonb
 language plpgsql
@@ -1167,7 +1362,8 @@ begin
       'lng', v_fisio.lng,
       'crefito', v_fisio.crefito,
       'crefito_uf', v_fisio.crefito_uf,
-      'foto_url', v_fisio.foto_url
+      'foto_url', v_fisio.foto_url,
+      'qualidade', public.hc_qualidade_fisio(v_fisio.id)
     ),
     'agendamentos', (
       select coalesce(
@@ -1378,16 +1574,38 @@ grant execute on function public.hc_sou_fisio() to authenticated;
 -- CONFIANÇA / AVALIAÇÕES
 -- ============================================================================
 
+-- "Maria Silva Santos" vira "Maria S." — dá credibilidade à avaliação sem
+-- expor a identidade completa de quem avaliou.
+-- migration-2026-08-02-avaliacoes-moderacao.sql.
+create or replace function public.hc_nome_curto(p_nome text)
+returns text
+language plpgsql
+immutable
+as $$
+declare
+  partes text[];
+begin
+  if p_nome is null or trim(p_nome) = '' then
+    return null;
+  end if;
+  partes := regexp_split_to_array(trim(p_nome), '\s+');
+  if array_length(partes, 1) = 1 then
+    return partes[1];
+  end if;
+  return partes[1] || ' ' || left(partes[array_length(partes, 1)], 1) || '.';
+end $$;
+
 -- Só avalia quem teve um atendimento com aquele fisioterapeuta, uma vez por
 -- atendimento (trava contra avaliação duplicada, migration-hardening-
 -- avancado.sql), e nunca a própria conta (migration-bloquear-
 -- autoavaliacao.sql — última rede de segurança contra a fraude de autoavaliação,
 -- válida mesmo que hc_criar_pedido e hc_fechar_agendamento sejam contornados
 -- de algum jeito, ou já exista um pedido antigo de uma conta que virou fisio
--- depois).
+-- depois). Bloqueia link/telefone no comentário (migration-2026-08-02-
+-- avaliacoes-moderacao.sql) e só aceita atendimento com status='concluido'
+-- e confirmado_paciente=true (migration-2026-08-11-contigo-qualidade.sql).
 --
--- ÚLTIMA FONTE: migration-bloquear-autoavaliacao.sql (idêntica em
--- migration-detectar-conta-fisio.sql, que não voltou a tocar nesta função).
+-- ÚLTIMA FONTE: migration-2026-08-11-contigo-qualidade.sql.
 create or replace function public.hc_avaliar(
   p_fisio_id uuid,
   p_nota integer,
@@ -1400,6 +1618,8 @@ set search_path = public, pg_temp
 as $$
 declare
   v_agendamento_id uuid;
+  v_nome_paciente text;
+  v_comentario text;
 begin
   if p_nota < 1 or p_nota > 5 then
     raise exception 'Nota inválida.';
@@ -1409,24 +1629,35 @@ begin
     raise exception 'Você não pode avaliar seu próprio cadastro.';
   end if;
 
-  select a.id into v_agendamento_id
+  select a.id, p.nome into v_agendamento_id, v_nome_paciente
   from agendamentos a
   join pedidos p on p.id = a.pedido_id
   where a.fisio_id = p_fisio_id
     and p.user_id = auth.uid()
+    and a.status = 'concluido'
+    and a.confirmado_paciente = true
   order by a.criado_em desc
   limit 1;
 
   if v_agendamento_id is null then
-    raise exception 'Você só pode avaliar um profissional que já te atendeu.';
+    raise exception 'Confirme que o atendimento aconteceu antes de avaliar.';
   end if;
 
   if exists (select 1 from avaliacoes where agendamento_id = v_agendamento_id) then
     raise exception 'Você já avaliou este atendimento.';
   end if;
 
-  insert into avaliacoes (fisio_id, nota, comentario, agendamento_id)
-  values (p_fisio_id, p_nota, nullif(trim(p_comentario), ''), v_agendamento_id);
+  v_comentario := nullif(trim(p_comentario), '');
+
+  if v_comentario is not null and (
+    v_comentario ~* 'https?://|www\.|\.com\b'
+    or regexp_replace(v_comentario, '[^0-9]', '', 'g') ~ '[0-9]{8,}'
+  ) then
+    raise exception 'O comentário não pode conter links ou telefones. Fale só sobre o atendimento.';
+  end if;
+
+  insert into avaliacoes (fisio_id, nota, comentario, agendamento_id, nome_avaliador, status)
+  values (p_fisio_id, p_nota, v_comentario, v_agendamento_id, hc_nome_curto(v_nome_paciente), 'publicada');
 end $$;
 
 revoke all on function public.hc_avaliar(uuid, integer, text) from public, anon;

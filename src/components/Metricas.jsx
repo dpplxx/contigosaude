@@ -8,8 +8,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Card, StarRow, Vazio } from "./ui";
+import { Card, SeloQualidade, StarRow, Vazio } from "./ui";
 import { pluralAvaliacoes } from "../lib/utils";
+import { calcularNivelQualidade } from "../lib/qualidade";
 
 // Posição estável e pseudo-aleatória a partir do nome do bairro. Não é
 // coordenada real: serve só para ver onde os pontos se agrupam.
@@ -162,6 +163,24 @@ export function Metricas({ dados }) {
     .sort((a, b) => b.media - a.media || b.count - a.count);
 
   const melhorAvaliado = mediasPorFisio[0];
+
+  // Mesma definição de "verificada" do Contigo Qualidade (hc_qualidade_fisio):
+  // status='publicada' e ligada a um agendamento real, nunca lançamento
+  // manual do admin.
+  const verificadasGlobais = avaliacoes.filter(
+    (a) => a.status === "publicada" && a.agendamento_id != null
+  );
+  const mediaGlobal =
+    verificadasGlobais.length > 0
+      ? verificadasGlobais.reduce((s, a) => s + a.nota, 0) / verificadasGlobais.length
+      : undefined;
+  const qualidadeMelhorAvaliado = melhorAvaliado
+    ? calcularNivelQualidade({
+        avaliacoes: avaliacoes.filter((a) => a.fisio_id === melhorAvaliado.p.id),
+        fisio: melhorAvaliado.p,
+        mediaGlobal,
+      })
+    : null;
   const maisAcionado = [...fisios].sort(
     (a, b) => (b.contador_cliques || 0) - (a.contador_cliques || 0)
   )[0];
@@ -243,11 +262,12 @@ export function Metricas({ dados }) {
           {melhorAvaliado ? (
             <>
               <p className="font-medium">{melhorAvaliado.p.nome}</p>
-              <div className="flex items-center gap-1.5 mt-1">
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                 <StarRow value={melhorAvaliado.media} />
                 <span className="text-xs" style={{ color: "var(--muted2)" }}>
                   {melhorAvaliado.media.toFixed(1)} ({pluralAvaliacoes(melhorAvaliado.count)})
                 </span>
+                <SeloQualidade qualidade={qualidadeMelhorAvaliado} />
               </div>
             </>
           ) : (
