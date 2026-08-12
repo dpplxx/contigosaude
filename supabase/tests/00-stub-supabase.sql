@@ -27,6 +27,28 @@ as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
 $$;
 
+-- Versão simplificada do auth.jwt() real (que lê request.jwt.claims cheio).
+-- Aqui só embrulha o mesmo sub simulado acima — nenhum teste ainda precisa
+-- de outras claims (como "email" ou "aal"), então elas saem null, e as
+-- checagens que dependem delas (hc_aal_suficiente, hc_limpar_tentativas_login)
+-- se comportam como "sem MFA ativo" / "sem sessão", que é o padrão seguro.
+create or replace function auth.jwt()
+returns jsonb
+language sql
+stable
+as $$
+  select jsonb_build_object('sub', current_setting('request.jwt.claim.sub', true));
+$$;
+
+-- hc_aal_suficiente() (migration-2026-08-08-mfa.sql) consulta esta tabela
+-- pra saber se a conta tem MFA verificado. Nos testes ninguém ativa MFA, só
+-- precisa existir vazia pra não quebrar o "select 1 from auth.mfa_factors".
+create table if not exists auth.mfa_factors (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users (id),
+  status text
+);
+
 create schema if not exists storage;
 
 create table if not exists storage.buckets (
