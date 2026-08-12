@@ -31,7 +31,12 @@ import {
 } from "../lib/api";
 import { trackEvent, Events } from "../lib/analytics";
 import {
+  CONVENIOS_COMUNS,
   ESPECIALIDADES_FISIO,
+  FORMAS_PAGAMENTO,
+  FORMA_PAGAMENTO_LABEL,
+  LOCAIS_ATENDIMENTO,
+  LOCAL_ATENDIMENTO_LABEL,
   crefitoValido,
   formatDataHora,
   mensagemDeErro,
@@ -70,6 +75,9 @@ const PHYSIO_INITIAL = {
   crefito: "",
   crefinoUf: "",
   fotoUrl: "",
+  locaisAtendimento: [],
+  formaPagamento: "",
+  convenios: [],
   declaracaoCrefito: false,
   declaracaoEtica: false,
   declaracaoResponsabilidade: false,
@@ -186,6 +194,9 @@ export function PhysioForm({ onToast }) {
           crefito: f.crefito || "",
           crefinoUf: f.crefito_uf || "",
           fotoUrl: f.foto_url || "",
+          locaisAtendimento: f.locais_atendimento || [],
+          formaPagamento: f.forma_pagamento || "",
+          convenios: f.convenios || [],
           declaracaoCrefito: true,
           declaracaoEtica: true,
           declaracaoResponsabilidade: true,
@@ -230,6 +241,26 @@ export function PhysioForm({ onToast }) {
         : [...f.especialidades, esp],
     }));
   };
+
+  const toggleLocal = (local) => {
+    setForm((f) => ({
+      ...f,
+      locaisAtendimento: f.locaisAtendimento.includes(local)
+        ? f.locaisAtendimento.filter((x) => x !== local)
+        : [...f.locaisAtendimento, local],
+    }));
+  };
+
+  const toggleConvenio = (nome) => {
+    setForm((f) => ({
+      ...f,
+      convenios: f.convenios.includes(nome)
+        ? f.convenios.filter((x) => x !== nome)
+        : [...f.convenios, nome],
+    }));
+  };
+
+  const setConvenios = (arr) => setForm((f) => ({ ...f, convenios: arr }));
 
   const atualizarStatusAgendamentoLocal = (id, status) => {
     setAgendamentos((lista) => lista.map((a) => (a.id === id ? { ...a, status } : a)));
@@ -469,7 +500,7 @@ export function PhysioForm({ onToast }) {
               ))}
             </SelectInput>
           </Field>
-          <Field label="Especialidades que você atende">
+          <Field label="Especialidades que você atende" group>
           <div className="flex flex-wrap gap-2">
             {ESPECIALIDADES_FISIO.map((esp) => {
               const active = form.especialidades.includes(esp);
@@ -494,6 +525,37 @@ export function PhysioForm({ onToast }) {
               );
             })}
           </div>
+        </Field>
+        <Field label="Onde você atende" group>
+          <div className="flex flex-wrap gap-2">
+            {LOCAIS_ATENDIMENTO.map((local) => {
+              const active = form.locaisAtendimento.includes(local);
+              const info = LOCAL_ATENDIMENTO_LABEL[local];
+              return (
+                <button
+                  type="button"
+                  key={local}
+                  onClick={() => toggleLocal(local)}
+                  className="text-sm px-3 py-1.5 rounded-full border transition-colors"
+                  style={
+                    active
+                      ? { background: "#009E86", borderColor: "#009E86", color: "#FFFFFF" }
+                      : {
+                          background: "transparent",
+                          borderColor: "var(--border-soft)",
+                          color: "var(--muted4)",
+                        }
+                  }
+                >
+                  {info.emoji} {info.rotulo}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs mt-1.5" style={{ color: "var(--muted2)" }}>
+            Pode marcar mais de um. Isso não muda a agenda nem cria reserva — é só informação para o
+            paciente e para a busca.
+          </p>
         </Field>
         <CepInput
           label="CEP de onde você sai para os atendimentos"
@@ -558,6 +620,56 @@ export function PhysioForm({ onToast }) {
             inputMode="decimal"
           />
         </Field>
+        <Field label="Forma de pagamento (opcional)">
+          <SelectInput
+            value={form.formaPagamento}
+            onChange={(e) => setForm((f) => ({ ...f, formaPagamento: e.target.value }))}
+          >
+            <option value="">Prefiro não informar agora</option>
+            {FORMAS_PAGAMENTO.map((fp) => (
+              <option key={fp} value={fp}>
+                {FORMA_PAGAMENTO_LABEL[fp].emoji} {FORMA_PAGAMENTO_LABEL[fp].rotulo}
+              </option>
+            ))}
+          </SelectInput>
+        </Field>
+        {(form.formaPagamento === "convenio" || form.formaPagamento === "particular_e_convenio") && (
+          <Field label="Convênios que você atende (opcional)" group>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {CONVENIOS_COMUNS.map((nome) => {
+                const active = form.convenios.includes(nome);
+                return (
+                  <button
+                    type="button"
+                    key={nome}
+                    onClick={() => toggleConvenio(nome)}
+                    className="text-sm px-3 py-1.5 rounded-full border transition-colors"
+                    style={
+                      active
+                        ? { background: "#009E86", borderColor: "#009E86", color: "#FFFFFF" }
+                        : {
+                            background: "transparent",
+                            borderColor: "var(--border-soft)",
+                            color: "var(--muted4)",
+                          }
+                    }
+                  >
+                    {nome}
+                  </button>
+                );
+              })}
+            </div>
+            <TagInput
+              value={form.convenios}
+              onChange={setConvenios}
+              placeholder="Outro convênio (digite e aperte Enter)"
+            />
+            <p className="text-xs mt-1.5" style={{ color: "var(--muted2)" }}>
+              Não garantimos autorização nem cobertura — isso é sempre combinado entre você e o
+              paciente.
+            </p>
+          </Field>
+        )}
 
         <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
           <p className="text-sm font-medium mb-3" style={{ color: "#16C4A8" }}>

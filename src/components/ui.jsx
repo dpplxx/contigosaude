@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { CheckCircle2, Loader2, Star, AlertCircle } from "lucide-react";
 import { formatarTelefone, STATUS_LABEL } from "../lib/utils";
 import { NIVEIS_QUALIDADE, TEXTO_SELO_NAO_COMPRAVEL } from "../lib/qualidade";
@@ -6,7 +6,28 @@ import { NIVEIS_QUALIDADE, TEXTO_SELO_NAO_COMPRAVEL } from "../lib/qualidade";
 export const inputBase =
   "w-full rounded-lg px-3.5 py-2.5 text-[15px] outline-none transition-colors border";
 
-export function Field({ label, children }) {
+// `group` deve ser usado quando os children são um grupo de botões (ex:
+// pills de especialidades) em vez de um único input/select: um <label>
+// envolvente sobrescreve o nome acessível de cada <button> filho para o
+// texto do campo inteiro, então usamos role="group" + aria-labelledby.
+export function Field({ label, children, group = false }) {
+  const labelId = useId();
+
+  if (group) {
+    return (
+      <div className="block mb-4" role="group" aria-labelledby={labelId}>
+        <span
+          id={labelId}
+          className="block text-sm mb-1.5 tracking-wide"
+          style={{ color: "var(--muted1)" }}
+        >
+          {label}
+        </span>
+        {children}
+      </div>
+    );
+  }
+
   return (
     <label className="block mb-4">
       <span className="block text-sm mb-1.5 tracking-wide" style={{ color: "var(--muted1)" }}>

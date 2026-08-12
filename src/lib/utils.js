@@ -25,6 +25,46 @@ export const ESPECIALIDADES_PACIENTE = [
 
 export const URGENCIAS = ["Esta semana", "Próximas semanas", "Só pesquisando"];
 
+// Onde/como o fisio atende (migration-2026-08-11-info-atendimento.sql) —
+// só informação declarada, não é agenda nem integração com operadora.
+export const LOCAIS_ATENDIMENTO = ["domicilio", "clinica", "consultorio", "outro"];
+
+export const LOCAL_ATENDIMENTO_LABEL = {
+  domicilio: { rotulo: "Domicílio", emoji: "🏠" },
+  clinica: { rotulo: "Clínica", emoji: "🏥" },
+  consultorio: { rotulo: "Consultório", emoji: "🏢" },
+  outro: { rotulo: "Outro", emoji: "📍" },
+};
+
+export const FORMAS_PAGAMENTO = ["particular", "convenio", "particular_e_convenio"];
+
+export const FORMA_PAGAMENTO_LABEL = {
+  particular: { rotulo: "Particular", emoji: "💰" },
+  convenio: { rotulo: "Convênio / plano de saúde", emoji: "💳" },
+  particular_e_convenio: { rotulo: "Particular e convênio", emoji: "💰💳" },
+};
+
+// Lista de apoio pra facilitar o cadastro e permitir filtrar na busca —
+// não significa credenciamento nem integração com a operadora. O fisio
+// sempre pode adicionar outra em "Outro".
+export const CONVENIOS_COMUNS = [
+  "Unimed",
+  "Bradesco Saúde",
+  "SulAmérica",
+  "Amil",
+  "NotreDame Intermédica",
+  "Hapvida",
+  "Porto Seguro Saúde",
+  "Golden Cross",
+  "Cassi",
+  "GEAP",
+  "Prevent Senior",
+  "Allianz Saúde",
+];
+
+export const AVISO_CONVENIO =
+  "A aceitação e cobertura podem variar conforme o plano e o procedimento. Confirme diretamente com o profissional.";
+
 export const STATUS_AGENDAMENTO = ["agendado", "concluido", "cancelado"];
 
 export const STATUS_LABEL = {

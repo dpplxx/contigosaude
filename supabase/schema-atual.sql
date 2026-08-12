@@ -104,7 +104,15 @@ create table if not exists public.fisios (
   notificacoes_ativas boolean default true,
   -- Dona da conta (auth.users) que fez ou adotou este cadastro. Nulo só em
   -- cadastros muito antigos, de antes do login do fisio existir.
-  user_id uuid references auth.users (id) on delete set null
+  user_id uuid references auth.users (id) on delete set null,
+  -- Onde/como atende (migration-2026-08-11-info-atendimento.sql). Tudo
+  -- opcional e vazio por padrão de propósito: não assumimos nada em nome
+  -- de quem ainda não preencheu — ver hc_listar_fisios mais abaixo.
+  locais_atendimento text[] not null default '{}'
+    check (locais_atendimento <@ array['domicilio', 'clinica', 'consultorio', 'outro']::text[]),
+  forma_pagamento text
+    check (forma_pagamento is null or forma_pagamento in ('particular', 'convenio', 'particular_e_convenio')),
+  convenios text[] not null default '{}'
 );
 
 create table if not exists public.pedidos (
@@ -737,7 +745,10 @@ create or replace function public.hc_cadastrar_fisio(
   p_lng double precision default null,
   p_raio_km integer default 10,
   p_crefito text default null,
-  p_crefito_uf text default null
+  p_crefito_uf text default null,
+  p_locais_atendimento text[] default '{}',
+  p_forma_pagamento text default null,
+  p_convenios text[] default '{}'
 )
 returns uuid
 language plpgsql
@@ -747,6 +758,8 @@ as $$
 declare
   v_id uuid;
   v_uid uuid := auth.uid();
+  v_locais text[] := coalesce(p_locais_atendimento, '{}');
+  v_convenios text[];
 begin
   if v_uid is null then
     raise exception 'Você precisa estar logado para se cadastrar.';
@@ -775,6 +788,19 @@ begin
   if p_raio_km is null or p_raio_km < 1 or p_raio_km > 100 then
     raise exception 'O raio de atendimento deve ficar entre 1 e 100 km.';
   end if;
+
+  if not (v_locais <@ array['domicilio', 'clinica', 'consultorio', 'outro']::text[]) then
+    raise exception 'Local de atendimento inválido.';
+  end if;
+
+  if p_forma_pagamento is not null and p_forma_pagamento not in ('particular', 'convenio', 'particular_e_convenio') then
+    raise exception 'Forma de pagamento inválida.';
+  end if;
+
+  select coalesce(array_agg(nullif(trim(c), '')), '{}')
+  into v_convenios
+  from unnest(coalesce(p_convenios, '{}')) as c
+  where nullif(trim(c), '') is not null;
 
   -- Cadastro já vinculado a esta conta tem prioridade.
   select id into v_id from fisios where user_id = v_uid limit 1;
@@ -805,6 +831,9 @@ begin
       raio_km = p_raio_km,
       crefito = nullif(trim(p_crefito), ''),
       crefito_uf = nullif(upper(trim(coalesce(p_crefito_uf, ''))), ''),
+      locais_atendimento = v_locais,
+      forma_pagamento = p_forma_pagamento,
+      convenios = v_convenios,
       user_id = v_uid
     where id = v_id;
     return v_id;
@@ -813,7 +842,8 @@ begin
   insert into fisios (
     nome, whatsapp, especialidades, cidade, bairros,
     formacao, resumo, disponibilidade, valor_sessao,
-    cep, uf, lat, lng, raio_km, crefito, crefito_uf, user_id
+    cep, uf, lat, lng, raio_km, crefito, crefito_uf,
+    locais_atendimento, forma_pagamento, convenios, user_id
   )
   values (
     trim(p_nome), trim(p_whatsapp), p_especialidades, trim(p_cidade),
@@ -824,7 +854,7 @@ begin
     nullif(upper(trim(coalesce(p_uf, ''))), ''),
     p_lat, p_lng, p_raio_km,
     nullif(trim(p_crefito), ''), nullif(upper(trim(coalesce(p_crefito_uf, ''))), ''),
-    v_uid
+    v_locais, p_forma_pagamento, v_convenios, v_uid
   )
   returning id into v_id;
 
@@ -833,11 +863,11 @@ end $$;
 
 revoke all on function public.hc_cadastrar_fisio(
   text, text, text[], text, text, text[], text, text, numeric, text, text,
-  double precision, double precision, integer, text, text
+  double precision, double precision, integer, text, text, text[], text, text[]
 ) from public, anon;
 grant execute on function public.hc_cadastrar_fisio(
   text, text, text[], text, text, text[], text, text, numeric, text, text,
-  double precision, double precision, integer, text, text
+  double precision, double precision, integer, text, text, text[], text, text[]
 ) to authenticated;
 
 -- Salva a URL pública da foto no cadastro do fisio logado. Separado de
@@ -1009,7 +1039,10 @@ create or replace function public.hc_listar_fisios(
   p_cidade text,
   p_bairro text,
   p_lat double precision default null,
-  p_lng double precision default null
+  p_lng double precision default null,
+  p_local_atendimento text default null,
+  p_forma_pagamento text default null,
+  p_convenio text default null
 )
 returns jsonb
 language sql
@@ -1028,6 +1061,8 @@ as $$
         'whatsapp', f.whatsapp,
         'crefito', f.crefito,
         'crefito_uf', f.crefito_uf,
+        'locais_atendimento', f.locais_atendimento,
+        'forma_pagamento', f.forma_pagamento,
         'nota_media', (
           select round(avg(a.nota)::numeric, 1) from avaliacoes a
           where a.fisio_id = f.id and a.status = 'publicada'
@@ -1050,6 +1085,21 @@ as $$
           then floor(hc_distancia_km(f.lat, f.lng, p_lat, p_lng) / 2)
           else 999
         end,
+        case
+          when p_convenio is null then 0
+          when p_convenio = any(f.convenios) then 0
+          else 1
+        end,
+        case
+          when p_forma_pagamento is null then 0
+          when p_forma_pagamento = 'particular'
+            and (f.forma_pagamento is null or f.forma_pagamento in ('particular', 'particular_e_convenio'))
+            then 0
+          when p_forma_pagamento = 'convenio'
+            and f.forma_pagamento in ('convenio', 'particular_e_convenio')
+            then 0
+          else 1
+        end,
         coalesce((q.dados ->> 'nivel')::int, 0) desc,
         case
           when p_lat is not null and f.lat is not null
@@ -1066,11 +1116,16 @@ as $$
     f.especialidades, f.cidade, f.bairros, f.lat, f.lng, f.raio_km,
     p_especialidade, p_cidade, p_bairro, p_lat, p_lng
   )
-  and f.deletado_em is null;
+  and f.deletado_em is null
+  and (
+    p_local_atendimento is null
+    or p_local_atendimento = any(f.locais_atendimento)
+    or (p_local_atendimento = 'domicilio' and coalesce(array_length(f.locais_atendimento, 1), 0) = 0)
+  );
 $$;
 
 grant execute on function public.hc_listar_fisios(
-  text, text, text, double precision, double precision
+  text, text, text, double precision, double precision, text, text, text
 ) to anon, authenticated;
 
 -- Contador público de fisios cadastrados — prova social real na landing.
@@ -1156,7 +1211,10 @@ as $$
       where a.fisio_id = f.id and a.status = 'publicada'
     ),
     'qualidade', public.hc_qualidade_fisio(f.id),
-    'raio_km', f.raio_km
+    'raio_km', f.raio_km,
+    'locais_atendimento', f.locais_atendimento,
+    'forma_pagamento', f.forma_pagamento,
+    'convenios', f.convenios
   )
   from public.fisios f
   where f.id = p_fisio_id
@@ -1363,6 +1421,9 @@ begin
       'crefito', v_fisio.crefito,
       'crefito_uf', v_fisio.crefito_uf,
       'foto_url', v_fisio.foto_url,
+      'locais_atendimento', v_fisio.locais_atendimento,
+      'forma_pagamento', v_fisio.forma_pagamento,
+      'convenios', v_fisio.convenios,
       'qualidade', public.hc_qualidade_fisio(v_fisio.id)
     ),
     'agendamentos', (

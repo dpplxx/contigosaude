@@ -3,7 +3,12 @@ import { MapPin, Phone, MessageCircle, Loader, ShieldCheck, Star, ChevronDown, C
 import { Card, Field, TextInput, SelectInput, PrimaryButton, StarRow, SeloQualidade } from "./ui";
 import { CepInput } from "./Compartilhados";
 import {
+  AVISO_CONVENIO,
+  CONVENIOS_COMUNS,
   ESPECIALIDADES_PACIENTE,
+  FORMA_PAGAMENTO_LABEL,
+  LOCAIS_ATENDIMENTO,
+  LOCAL_ATENDIMENTO_LABEL,
   URGENCIAS,
   diasDesdeData,
   mensagemDeErro,
@@ -41,6 +46,9 @@ const BUSCA_INITIAL = {
   uf: "",
   lat: null,
   lng: null,
+  localAtendimento: "",
+  formaPagamento: "",
+  convenio: "",
 };
 
 // As páginas de SEO por cidade (ex.: /fisioterapia-domiciliar/serra) linkam
@@ -175,6 +183,9 @@ export function BuscaFisios() {
         p_bairro: form.bairro,
         p_lat: form.lat,
         p_lng: form.lng,
+        p_local_atendimento: form.localAtendimento || null,
+        p_forma_pagamento: form.formaPagamento || null,
+        p_convenio: form.convenio || null,
       });
 
       if (error) throw error;
@@ -292,6 +303,43 @@ export function BuscaFisios() {
               ))}
             </SelectInput>
           </Field>
+
+          <Field label="Onde você precisa de atendimento? (opcional)">
+            <SelectInput value={form.localAtendimento} onChange={set("localAtendimento")}>
+              <option value="">Não importa</option>
+              {LOCAIS_ATENDIMENTO.map((local) => (
+                <option key={local} value={local}>
+                  {LOCAL_ATENDIMENTO_LABEL[local].emoji} {LOCAL_ATENDIMENTO_LABEL[local].rotulo}
+                </option>
+              ))}
+            </SelectInput>
+          </Field>
+
+          <Field label="Como pretende pagar? (opcional)">
+            <SelectInput
+              value={form.formaPagamento}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, formaPagamento: e.target.value, convenio: "" }))
+              }
+            >
+              <option value="">Não importa</option>
+              <option value="particular">{FORMA_PAGAMENTO_LABEL.particular.emoji} Particular</option>
+              <option value="convenio">{FORMA_PAGAMENTO_LABEL.convenio.emoji} Convênio</option>
+            </SelectInput>
+          </Field>
+
+          {form.formaPagamento === "convenio" && (
+            <Field label="Qual convênio? (opcional)">
+              <SelectInput value={form.convenio} onChange={set("convenio")}>
+                <option value="">Qualquer um</option>
+                {CONVENIOS_COMUNS.map((nome) => (
+                  <option key={nome} value={nome}>
+                    {nome}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+          )}
 
           <CepInput
             valor={form.cep}
@@ -649,6 +697,19 @@ function CartaFisio({ fisio, onAbrirPerfil }) {
           <SeloQualidade qualidade={fisio.qualidade} />
         </div>
 
+        {(fisio.locais_atendimento?.length > 0 || fisio.forma_pagamento) && (
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap text-xs" style={{ color: "var(--muted1)" }}>
+            {fisio.locais_atendimento?.map((local) => (
+              <span key={local}>
+                {LOCAL_ATENDIMENTO_LABEL[local]?.emoji} {LOCAL_ATENDIMENTO_LABEL[local]?.rotulo}
+              </span>
+            ))}
+            {fisio.forma_pagamento && (
+              <span>{FORMA_PAGAMENTO_LABEL[fisio.forma_pagamento]?.emoji} {FORMA_PAGAMENTO_LABEL[fisio.forma_pagamento]?.rotulo}</span>
+            )}
+          </div>
+        )}
+
         {fisio.total_avaliacoes > 0 && <AvaliacoesFisio fisioId={fisio.id} />}
 
         {fisio.especialidades && fisio.especialidades.length > 0 && (
@@ -853,6 +914,38 @@ function PerfilCompartilhado({ fisio, onVoltar }) {
                   {esp}
                 </span>
               ))}
+            </div>
+          )}
+
+          {(fisio.locais_atendimento?.length > 0 || fisio.forma_pagamento || fisio.convenios?.length > 0) && (
+            <div className="w-full text-left mt-6">
+              <h2 className="font-medium mb-2">Onde e como atende</h2>
+              {fisio.locais_atendimento?.length > 0 && (
+                <p className="text-sm mt-1" style={{ color: "var(--muted1)" }}>
+                  {fisio.locais_atendimento
+                    .map((l) => `${LOCAL_ATENDIMENTO_LABEL[l]?.emoji} ${LOCAL_ATENDIMENTO_LABEL[l]?.rotulo}`)
+                    .join("  ")}
+                </p>
+              )}
+              {fisio.forma_pagamento && (
+                <p className="text-sm mt-1" style={{ color: "var(--muted1)" }}>
+                  {FORMA_PAGAMENTO_LABEL[fisio.forma_pagamento]?.emoji}{" "}
+                  {FORMA_PAGAMENTO_LABEL[fisio.forma_pagamento]?.rotulo}
+                </p>
+              )}
+              {fisio.convenios?.length > 0 && (
+                <p className="text-sm mt-2" style={{ color: "var(--muted1)" }}>
+                  <strong>Convênios: </strong>
+                  {fisio.convenios.join(", ")}
+                </p>
+              )}
+              {(fisio.forma_pagamento === "convenio" ||
+                fisio.forma_pagamento === "particular_e_convenio" ||
+                fisio.convenios?.length > 0) && (
+                <p className="text-xs mt-2" style={{ color: "var(--muted2)" }}>
+                  {AVISO_CONVENIO}
+                </p>
+              )}
             </div>
           )}
 

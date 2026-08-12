@@ -38,6 +38,9 @@ export function cadastrarFisio(form) {
     p_raio_km: Number(form.raioKm) || 10,
     p_crefito: form.crefito || null,
     p_crefito_uf: form.crefinoUf || null,
+    p_locais_atendimento: form.locaisAtendimento || [],
+    p_forma_pagamento: form.formaPagamento || null,
+    p_convenios: form.convenios || [],
   });
 }
 
