@@ -36,7 +36,7 @@ jobs:
       PGPASSWORD: postgres
       PGDATABASE: postgres
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Instalar cliente psql
         run: sudo apt-get update && sudo apt-get install --yes postgresql-client
